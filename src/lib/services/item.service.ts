@@ -20,6 +20,7 @@ export async function upsertItem(userId: string, data: Item): Promise<void> {
     await itemRepo.update(data.id, {
       type: data.type,
       name: data.name,
+      brandIconUrl: data.brandIconUrl,
       amount: data.amount,
       currency: data.currency,
       billingCycle: data.billingCycle,
@@ -42,9 +43,13 @@ export async function upsertItem(userId: string, data: Item): Promise<void> {
 export async function markItemPaid(
   itemId: string,
   date: string,
+  userId: string,
 ): Promise<Item | null> {
   const row = await itemRepo.findById(itemId);
   if (!row) return null;
+
+  // Ownership check — prevent IDOR
+  if (row.userId !== userId) return null;
 
   if (row.type === "bnpl") {
     const changes = markBnplPaid(row);
@@ -59,4 +64,3 @@ export async function markItemPaid(
   const updated = await itemRepo.findById(itemId);
   return updated ? toItem(updated) : null;
 }
-

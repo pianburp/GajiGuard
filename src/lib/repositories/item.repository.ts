@@ -35,6 +35,7 @@ export async function insert(userId: string, data: Item) {
     userId,
     type: data.type,
     name: data.name,
+    brandIconUrl: data.brandIconUrl,
     amount: data.amount,
     currency: data.currency,
     billingCycle: data.billingCycle,
@@ -56,6 +57,7 @@ export async function update(
   data: Partial<{
     type: "subscription" | "bnpl";
     name: string;
+    brandIconUrl: string | null;
     amount: number;
     currency: string;
     billingCycle: "weekly" | "biweekly" | "monthly" | "yearly";

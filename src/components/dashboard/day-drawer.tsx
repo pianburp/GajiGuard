@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatRM } from "@/lib/format";
 import type { Item, Occurrence } from "@/lib/domain/types";
 import { Check, Pencil, CreditCard, Package, Calendar } from "lucide-react";
+import { BrandIcon } from "@/components/dashboard/brand-icon";
 
 interface DayDrawerProps {
   date: string | null;
@@ -45,7 +46,6 @@ export function DayDrawer({
       <SheetContent className="w-full sm:max-w-md">
         <SheetHeader className="space-y-2 pb-4">
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="h-4 w-4" />
             <span className="text-xs font-medium uppercase tracking-wide">Payment Date</span>
           </div>
           <SheetTitle className="text-left text-xl font-semibold">{date ? formatDate(date) : ""}</SheetTitle>
@@ -85,10 +85,18 @@ export function DayDrawer({
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <div
-                            className="h-2.5 w-2.5 shrink-0 rounded-full"
-                            style={{ backgroundColor: item.color }}
-                          />
+                          {item.brandIconUrl ? (
+                            <BrandIcon
+                              name={item.name}
+                              iconUrl={item.brandIconUrl}
+                              className="h-5 w-5 rounded-[5px]"
+                            />
+                          ) : (
+                            <div
+                              className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: item.color }}
+                            />
+                          )}
                           <h4 className="truncate font-medium">{item.name}</h4>
                         </div>
                         <div className="mt-2 flex items-center gap-2">

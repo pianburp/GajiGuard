@@ -5,6 +5,7 @@ export type ItemRow = {
   id: string;
   type: string;
   name: string;
+  brandIconUrl: string | null;
   amount: number;
   currency: string;
   billingCycle: string;
@@ -25,6 +26,7 @@ export function toItem(row: ItemRow): Item {
     id: row.id,
     type: row.type as Item["type"],
     name: row.name,
+    brandIconUrl: row.brandIconUrl,
     amount: row.amount,
     currency: row.currency as "MYR",
     billingCycle: row.billingCycle as Item["billingCycle"],

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
 import { CalendarView } from "@/components/dashboard/calendar-view";
 import { DayDrawer } from "@/components/dashboard/day-drawer";
 import { ItemForm } from "@/components/dashboard/item-form";
@@ -17,11 +17,9 @@ import { upsertItem, markItemPaid, upgradeUserPlan } from "@/actions";
 
 import type { Item, PlanTier } from "@/lib/domain/types";
 import {
-  ChevronLeft,
-  ChevronRight,
   CalendarDays,
   Plus,
-  LayoutDashboard,
+  CalendarFold,
 } from "lucide-react";
 
 interface DashboardClientProps {
@@ -43,7 +41,7 @@ export function DashboardClient({
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [formNonce, setFormNonce] = useState(0);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const router = useRouter();
+
 
   const occurrences = useMemo(
     () =>
@@ -73,13 +71,16 @@ export function DashboardClient({
     [occurrences],
   );
 
-  const redirectToAuth = (mode: "login" | "signup" = "login") => {
-    router.push(mode === "signup" ? "/auth/signup" : "/auth/login");
+  const signInWithGoogle = () => {
+    authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/",
+    });
   };
 
   const onAddClick = useCallback(() => {
     if (!isAuthenticated) {
-      redirectToAuth("signup");
+      signInWithGoogle();
       return;
     }
     if (plan === "free" && items.length >= FREE_ITEM_LIMIT) {
@@ -89,12 +90,12 @@ export function DashboardClient({
     setEditItem(null);
     setFormNonce((n) => n + 1);
     setFormOpen(true);
-  }, [isAuthenticated, plan, items.length, router]);
+  }, [isAuthenticated, plan, items.length]);
 
   const onSave = useCallback(
     async (item: Item) => {
       if (!isAuthenticated) {
-        redirectToAuth();
+        signInWithGoogle();
         return;
       }
       const exists = items.some((candidate) => candidate.id === item.id);
@@ -111,13 +112,13 @@ export function DashboardClient({
         setItems(items);
       }
     },
-    [isAuthenticated, items, router],
+    [isAuthenticated, items],
   );
 
   const onMarkPaid = useCallback(
     async (itemId: string, date: string) => {
       if (!isAuthenticated) {
-        redirectToAuth();
+        signInWithGoogle();
         return;
       }
 
@@ -149,25 +150,8 @@ export function DashboardClient({
         setItems(items);
       }
     },
-    [isAuthenticated, items, router],
+    [isAuthenticated, items],
   );
-
-  const onPrevMonth = () => {
-    const next = new Date(monthDate);
-    next.setMonth(next.getMonth() - 1);
-    setMonthDate(next);
-  };
-
-  const onNextMonth = () => {
-    const next = new Date(monthDate);
-    next.setMonth(next.getMonth() + 1);
-    setMonthDate(next);
-  };
-
-  const monthLabel = monthDate.toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -175,14 +159,17 @@ export function DashboardClient({
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <LayoutDashboard className="h-5 w-5 text-muted-foreground" />
+            <CalendarFold className="h-5 w-5 text-muted-foreground" />
             <h1 className="text-lg font-semibold tracking-tight">Dashboard</h1>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {isAuthenticated ? (
               <span className="flex items-center gap-2">
                 Plan:
-                <Badge variant="secondary" className="text-xs font-normal uppercase">
+                <Badge
+                  variant={plan === "pro" ? "pro" : "secondary"}
+                  className="text-xs font-normal uppercase"
+                >
                   {plan}
                 </Badge>
                 <span className="text-border">|</span>
@@ -194,27 +181,6 @@ export function DashboardClient({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-md border bg-card p-0.5">
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={onPrevMonth}
-              className="h-7 w-7"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="min-w-[130px] px-3 text-center text-sm font-medium tabular-nums">
-              {monthLabel}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={onNextMonth}
-              className="h-7 w-7"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
           <Button onClick={onAddClick} size="sm" className="gap-1.5">
             <Plus className="h-4 w-4" />
             Add Item
@@ -223,11 +189,13 @@ export function DashboardClient({
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_300px]">
         <CalendarView
           monthDate={monthDate}
+          selectedDate={selectedDate}
           occurrences={occurrences}
           itemsById={itemsById}
+          onMonthChange={setMonthDate}
           onSelectDate={(date) => setSelectedDate(date)}
         />
         <UpcomingSidebar
@@ -274,7 +242,7 @@ export function DashboardClient({
         onMarkPaid={onMarkPaid}
         onEdit={(item) => {
           if (!isAuthenticated) {
-            redirectToAuth();
+            signInWithGoogle();
             return;
           }
           setEditItem(item);
@@ -288,7 +256,7 @@ export function DashboardClient({
         onClose={() => setUpgradeOpen(false)}
         onUpgrade={async () => {
           if (!isAuthenticated) {
-            redirectToAuth();
+            signInWithGoogle();
             return;
           }
           setPlan("pro");

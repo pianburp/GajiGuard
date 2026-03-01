@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { formatRM, formatRelativeDate, formatShortDate } from "@/lib/format";
 import type { Item, Occurrence } from "@/lib/domain/types";
 import { Wallet, Clock, CreditCard, Package } from "lucide-react";
+import { BrandIcon } from "@/components/dashboard/brand-icon";
 
 interface UpcomingSidebarProps {
   monthlyTotal: number;
@@ -87,10 +88,18 @@ export function UpcomingSidebar({
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <div
-                              className="h-2 w-2 shrink-0 rounded-full"
-                              style={{ backgroundColor: item.color }}
-                            />
+                            {item.brandIconUrl ? (
+                              <BrandIcon
+                                name={item.name}
+                                iconUrl={item.brandIconUrl}
+                                className="h-4 w-4 rounded-[4px]"
+                              />
+                            ) : (
+                              <div
+                                className="h-2 w-2 shrink-0 rounded-full"
+                                style={{ backgroundColor: item.color }}
+                              />
+                            )}
                             <p className="truncate text-sm font-medium">{item.name}</p>
                           </div>
                           <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">

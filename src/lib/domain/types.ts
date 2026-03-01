@@ -19,6 +19,7 @@ export interface Item {
   id: string;
   type: ItemType;
   name: string;
+  brandIconUrl: string | null;
   amount: number;
   currency: "MYR";
   billingCycle: BillingCycle;

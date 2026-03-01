@@ -8,6 +8,20 @@
       "when": 1772248993220,
       "tag": "0000_violet_loners",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1772301600000,
+      "tag": "0001_solid_brand_icons",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772294940815,
+      "tag": "0002_minor_dragon_lord",
+      "breakpoints": true
     }
   ]
 }

@@ -26,7 +26,8 @@ export async function markItemPaid(
   date: string,
 ): Promise<Item | null> {
   const user = await getSessionUser();
-  requireUserId(user?.id);
-  return itemService.markItemPaid(itemId, date);
+  const userId = requireUserId(user?.id);
+  return itemService.markItemPaid(itemId, date, userId);
 }
+
 

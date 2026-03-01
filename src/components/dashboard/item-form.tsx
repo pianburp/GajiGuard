@@ -22,9 +22,15 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { CATEGORY_OPTIONS, ITEM_COLORS } from "@/lib/constants";
 import { toLocalDateKey } from "@/lib/date";
+import {
+  RECOGNIZED_SUBSCRIPTIONS,
+  findRecognizedSubscriptionByName,
+  getBrandfetchIconUrl,
+} from "@/lib/brandfetch";
 import type { BillingCycle, Category, Item, ItemType } from "@/lib/domain/types";
-import { CreditCard, Package, Calendar, Tag, FileText, Palette } from "lucide-react";
+import { CreditCard, Package, Calendar, Tag, FileText, Palette, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BrandIcon } from "@/components/dashboard/brand-icon";
 
 interface ItemFormProps {
   open: boolean;
@@ -44,6 +50,8 @@ function makeId(): string {
 type ItemDraft = {
   type: ItemType;
   name: string;
+  brandIconUrl: string;
+  recognizedDomain: string;
   amount: string;
   billingCycle: BillingCycle;
   billingDay: string;
@@ -56,9 +64,15 @@ type ItemDraft = {
 };
 
 function toDraft(editItem: Item | null): ItemDraft {
+  const recognized = findRecognizedSubscriptionByName(editItem?.name ?? "");
+
   return {
     type: editItem?.type ?? "subscription",
     name: editItem?.name ?? "",
+    brandIconUrl:
+      editItem?.brandIconUrl ??
+      (recognized ? getBrandfetchIconUrl(recognized.domain) : ""),
+    recognizedDomain: recognized?.domain ?? "",
     amount: String(editItem?.amount ?? ""),
     billingCycle: editItem?.billingCycle ?? "monthly",
     billingDay: String(editItem?.billingDay ?? 1),
@@ -93,6 +107,10 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
       id: editItem?.id ?? makeId(),
       type: draft.type,
       name: draft.name.trim(),
+      brandIconUrl:
+        draft.type === "subscription" && draft.brandIconUrl
+          ? draft.brandIconUrl
+          : null,
       amount: parsedAmount,
       currency: "MYR",
       billingCycle: draft.billingCycle,
@@ -125,7 +143,15 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
           {/* Type Selector */}
           <Tabs
             value={type}
-            onValueChange={(v) => setDraft((prev) => ({ ...prev, type: v as ItemType }))}
+            onValueChange={(v) =>
+              setDraft((prev) => ({
+                ...prev,
+                type: v as ItemType,
+                ...(v === "bnpl"
+                  ? { recognizedDomain: "", brandIconUrl: "" }
+                  : {}),
+              }))
+            }
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-2 h-9">
@@ -152,11 +178,71 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
               <Input
                 id="name"
                 value={draft.name}
-                onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => {
+                  const nextName = e.target.value;
+                  const recognized = findRecognizedSubscriptionByName(nextName);
+                  setDraft((prev) => ({
+                    ...prev,
+                    name: nextName,
+                    recognizedDomain: recognized?.domain ?? "",
+                    brandIconUrl: recognized ? getBrandfetchIconUrl(recognized.domain) : "",
+                  }));
+                }}
                 placeholder="e.g., Netflix, iPhone Installment"
                 maxLength={100}
               />
             </div>
+
+            {type === "subscription" && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <Store className="h-3 w-3" />
+                  Recognized Subscription
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={draft.recognizedDomain || "__none__"}
+                    onValueChange={(value) => {
+                      if (value === "__none__") {
+                        setDraft((prev) => ({
+                          ...prev,
+                          recognizedDomain: "",
+                          brandIconUrl: "",
+                        }));
+                        return;
+                      }
+                      const selected = RECOGNIZED_SUBSCRIPTIONS.find(
+                        (option) => option.domain === value,
+                      );
+                      if (!selected) return;
+                      setDraft((prev) => ({
+                        ...prev,
+                        name: selected.name,
+                        recognizedDomain: selected.domain,
+                        brandIconUrl: getBrandfetchIconUrl(selected.domain),
+                      }));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pick a brand to auto-add icon" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">None</SelectItem>
+                      {RECOGNIZED_SUBSCRIPTIONS.map((subscription) => (
+                        <SelectItem key={subscription.domain} value={subscription.domain}>
+                          {subscription.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <BrandIcon
+                    name={draft.name || "brand"}
+                    iconUrl={draft.brandIconUrl}
+                    className="h-9 w-9"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Amount */}
             <div className="space-y-2">

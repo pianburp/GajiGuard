@@ -73,6 +73,7 @@ export const item = pgTable("item", {
     .references(() => user.id, { onDelete: "cascade" }),
   type: text("type", { enum: ["subscription", "bnpl"] }).notNull(),
   name: text("name").notNull(),
+  brandIconUrl: text("brand_icon_url"),
   amount: real("amount").notNull(),
   currency: text("currency").notNull().default("MYR"),
   billingCycle: text("billing_cycle", {

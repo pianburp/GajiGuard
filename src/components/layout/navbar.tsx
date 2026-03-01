@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { AuthButton } from "@/components/auth/auth-button";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,7 +13,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Shield, LogOut, User, ChevronDown } from "lucide-react";
+import { LogOut, User, ChevronDown } from "lucide-react";
 
 interface NavbarProps {
   isAuthenticated: boolean;
@@ -24,8 +25,8 @@ export function Navbar({ isAuthenticated, email }: NavbarProps) {
 
   const handleLogout = async () => {
     await authClient.signOut();
-    router.push("/");
-    router.refresh();
+    // Hard redirect to fully reset client-side React state
+    window.location.href = "/";
   };
 
   const userInitial = email?.charAt(0).toUpperCase() ?? "U";
@@ -34,16 +35,13 @@ export function Navbar({ isAuthenticated, email }: NavbarProps) {
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-foreground">
-            <Shield className="h-4 w-4 text-background" />
-          </div>
-          <span className="font-semibold tracking-tight text-sm">GajiGuard</span>
+          <span className="font-semibold tracking-tight text-xl">GajiGuard</span>
         </Link>
 
         <nav className="flex items-center gap-1">
           {isAuthenticated ? (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+              <DropdownMenuTrigger asChild id="user-menu-trigger">
                 <Button variant="ghost" className="gap-2 px-2 h-8">
                   <Avatar className="h-6 w-6">
                     <AvatarFallback className="bg-muted text-xs font-medium">
@@ -69,14 +67,7 @@ export function Navbar({ isAuthenticated, email }: NavbarProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <>
-              <Button variant="ghost" size="sm" asChild className="text-xs">
-                <Link href="/auth/login">Log in</Link>
-              </Button>
-              <Button size="sm" asChild className="text-xs">
-                <Link href="/auth/signup">Sign up</Link>
-              </Button>
-            </>
+            <AuthButton />
           )}
         </nav>
       </div>
