@@ -46,7 +46,7 @@ export function Navbar({ isAuthenticated, email, avatarUrl }: NavbarProps) {
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2">
-            <span className="font-semibold tracking-tight text-xl">KeepDuit</span>
+            <span className="font-semibold tracking-tight text-xl">LangganCheck</span>
           </Link>
 
           <nav className="flex items-center gap-1">

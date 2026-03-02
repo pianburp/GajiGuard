@@ -8,7 +8,7 @@ import { ThemeTogglerButton } from "@/components/animate-ui/components/buttons/t
 import { CopyButton } from "@/components/animate-ui/components/buttons/copy";
 
 export const metadata: Metadata = {
-  title: "KeepDuit — Subscription & BNPL Tracker",
+  title: "LangganCheck — Subscription & BNPL Tracker",
   description: "Track subscriptions and BNPL commitments with a monthly calendar view.",
 };
 

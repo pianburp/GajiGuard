@@ -63,7 +63,7 @@ export const verification = pgTable("verification", {
 });
 
 // ──────────────────────────────────────────────
-// Keepduit domain tables
+// LangganCheck domain tables
 // ──────────────────────────────────────────────
 
 export const item = pgTable("item", {
