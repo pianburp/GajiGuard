@@ -84,8 +84,8 @@ export function BudgetBar({ budget, spent, onSetBudget }: BudgetBarProps) {
   const nearLimit = pct >= 80 && !overBudget;
 
   return (
-    <div>
-      <div className="mb-1.5 flex items-center justify-between">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={startEditing}
@@ -112,7 +112,7 @@ export function BudgetBar({ budget, spent, onSetBudget }: BudgetBarProps) {
       </div>
 
       {/* Labels */}
-      <div className="mt-1.5 flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between text-xs">
         <span className="tabular-nums">
           <span className={cn("font-medium", overBudget && "text-red-500")}>
             {formatRM(spent)}
@@ -122,13 +122,13 @@ export function BudgetBar({ budget, spent, onSetBudget }: BudgetBarProps) {
         {overBudget && (
           <span className="flex items-center gap-1 font-medium text-red-500">
             <AlertTriangle className="h-3 w-3" />
-            Melebihi bajet!
+            Alamak!
           </span>
         )}
         {nearLimit && (
           <span className="flex items-center gap-1 font-medium text-amber-500">
             <AlertTriangle className="h-3 w-3" />
-            Hampir had!
+            Hampir penuh!
           </span>
         )}
       </div>

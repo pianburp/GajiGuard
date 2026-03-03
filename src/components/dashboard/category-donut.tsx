@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { PieChart, Pie, Cell, Tooltip } from "recharts";
 import { CATEGORY_COLORS, CATEGORY_OPTIONS } from "@/lib/constants";
 import { formatRM } from "@/lib/format";
@@ -24,11 +24,20 @@ interface ChartDatum {
 interface DonutLayerProps {
   data: ChartDatum[];
   total: number;
-  size: 100 | 160;
-  innerRadius: number;
-  outerRadius: number;
-  isActive: boolean;
 }
+
+const BASE_DONUT_SIZE = 160;
+const COMPACT_DONUT_SIZE = 100;
+const LAYOUT_TRANSITION = {
+  type: "spring" as const,
+  stiffness: 260,
+  damping: 30,
+  mass: 0.85,
+};
+const SIZE_TRANSITION = {
+  duration: 0.34,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
 
 const categoryLabelMap = Object.fromEntries(
   CATEGORY_OPTIONS.map((o) => [o.value, o.label]),
@@ -37,39 +46,24 @@ const categoryLabelMap = Object.fromEntries(
 function DonutLayer({
   data,
   total,
-  size,
-  innerRadius,
-  outerRadius,
-  isActive,
 }: DonutLayerProps) {
   return (
-    <motion.div
-      initial={false}
-      animate={{
-        opacity: isActive ? 1 : 0,
-        scale: isActive ? 1 : 0.985,
-      }}
-      transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-      className={cn(
-        "absolute inset-0 flex items-center justify-center",
-        !isActive && "pointer-events-none"
-      )}
-    >
-      <div className="relative" style={{ width: size, height: size }}>
-        <PieChart width={size} height={size}>
+    <div className="relative" style={{ width: BASE_DONUT_SIZE, height: BASE_DONUT_SIZE }}>
+      <PieChart width={BASE_DONUT_SIZE} height={BASE_DONUT_SIZE}>
           <Pie
             data={data}
             dataKey="amount"
             nameKey="label"
             cx="50%"
             cy="50%"
-            innerRadius={innerRadius}
-            outerRadius={outerRadius}
+            innerRadius={50}
+            outerRadius={80}
             strokeWidth={2}
             stroke="var(--background)"
+            isAnimationActive={false}
           >
             {data.map((d) => (
-              <Cell key={`${size}-${d.category}`} fill={d.color} />
+              <Cell key={d.category} fill={d.color} />
             ))}
           </Pie>
           <Tooltip
@@ -86,19 +80,13 @@ function DonutLayer({
               );
             }}
           />
-        </PieChart>
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <span
-            className={cn(
-              "font-semibold tabular-nums text-muted-foreground transition-[font-size] motion-reduce:transition-none",
-              size === 100 ? "text-[10px]" : "text-sm",
-            )}
-          >
-            {formatRM(total)}
-          </span>
-        </div>
+      </PieChart>
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <span className="text-sm font-semibold tabular-nums text-muted-foreground">
+          {formatRM(total)}
+        </span>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -123,35 +111,38 @@ export function CategoryDonut({ occurrences, itemsById, isCompact = false }: Cat
   if (data.length === 0) return null;
 
   const total = data.reduce((s, d) => s + d.amount, 0);
+  const donutScale = isCompact ? COMPACT_DONUT_SIZE / BASE_DONUT_SIZE : 1;
+  const donutBoxSize = isCompact ? COMPACT_DONUT_SIZE : BASE_DONUT_SIZE;
 
   return (
-    <motion.div layout>
+    <motion.div layout="position" transition={LAYOUT_TRANSITION}>
       <motion.div
         layout
         className={cn(
           isCompact ? "flex items-center gap-3" : "flex flex-col items-center gap-6",
         )}
-        transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+        transition={LAYOUT_TRANSITION}
       >
-        <motion.div layout className={cn("relative shrink-0 overflow-hidden", isCompact ? "h-[100px] w-[100px]" : "h-[160px] w-[160px]")}>
-          <DonutLayer
-            data={data}
-            total={total}
-            size={160}
-            innerRadius={50}
-            outerRadius={80}
-            isActive={!isCompact}
-          />
-          <DonutLayer
-            data={data}
-            total={total}
-            size={100}
-            innerRadius={28}
-            outerRadius={46}
-            isActive={isCompact}
-          />
+        <motion.div
+          layout
+          animate={{ width: donutBoxSize, height: donutBoxSize }}
+          transition={SIZE_TRANSITION}
+          className="relative shrink-0 overflow-x-hidden"
+        >
+          <motion.div
+            animate={{ scale: donutScale }}
+            transition={SIZE_TRANSITION}
+            className="absolute inset-0 flex items-center justify-center origin-center will-change-transform"
+            style={{ transformOrigin: "50% 50%" }}
+          >
+            <DonutLayer data={data} total={total} />
+          </motion.div>
         </motion.div>
-        <motion.div layout className={`flex min-w-0 flex-col gap-1.5 ${isCompact ? "flex-1" : "w-full"}`}>
+        <motion.div
+          layout
+          transition={LAYOUT_TRANSITION}
+          className={`flex min-w-0 flex-col gap-1.5 ${isCompact ? "flex-1" : "w-full"}`}
+        >
           {data.slice(0, 5).map((d) => (
             <motion.div layout="position" key={d.category} className="flex items-center justify-between gap-2 text-xs">
               <span className="flex items-center gap-1.5 truncate">
@@ -159,26 +150,18 @@ export function CategoryDonut({ occurrences, itemsById, isCompact = false }: Cat
                   className="inline-block h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: d.color }}
                 />
-                <motion.span
-                  layout="position"
-                  animate={{ color: isCompact ? "inherit" : "var(--foreground)" }}
-                  className={cn(
-                    "truncate",
-                    isCompact ? "" : "text-sm text-foreground",
-                  )}
-                >
+                <span className={cn("truncate", isCompact ? "" : "text-sm text-foreground")}>
                   {d.label}
-                </motion.span>
+                </span>
               </span>
-              <motion.span
-                layout="position"
+              <span
                 className={cn(
                   "shrink-0 tabular-nums",
                   isCompact ? "text-muted-foreground" : "text-sm text-muted-foreground",
                 )}
               >
                 {formatRM(d.amount)}
-              </motion.span>
+              </span>
             </motion.div>
           ))}
           {data.length > 5 && (

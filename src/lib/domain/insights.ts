@@ -3,6 +3,7 @@ import { toLocalDateKey } from "@/lib/date";
 import { calculateAnnualSavings } from "@/lib/domain/item";
 import { getOccurrencesForMonth } from "@/lib/domain/schedule";
 import type { Item } from "@/lib/domain/types";
+import { formatRM } from "../format";
 
 export interface HeatmapMonth {
   month: number;
@@ -191,7 +192,7 @@ export function buildSmartCancelSuggestions(healthRows: SubscriptionHealthRow[])
       color: row.color,
       consecutiveMissedMonths: row.consecutiveMissedMonths,
       annualSavings: row.annualSavings,
-      message: `Dah ${row.consecutiveMissedMonths} bulan tak guna - jimat RM kalau cancel`,
+      message: ` ${row.consecutiveMissedMonths} consecutive missed payments, potential savings of ${formatRM(row.annualSavings)}/annum.`,
     }));
 }
 

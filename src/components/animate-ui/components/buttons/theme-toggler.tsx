@@ -19,20 +19,17 @@ const getIcon = (
   resolved: Resolved,
   modes: ThemeSelection[],
 ) => {
-  const theme = modes.includes('system') ? effective : resolved;
-  return theme === 'system' ? (
-    <Monitor />
-  ) : theme === 'dark' ? (
-    <Moon />
-  ) : (
-    <Sun />
-  );
+  // With `enableSystem={false}` the provider will never set theme to
+  // "system", so we can ignore that case and simply show the resolved
+  // light/dark state.
+  return resolved === 'dark' ? <Moon /> : <Sun />;
 };
 
 const getNextTheme = (
   effective: ThemeSelection,
   modes: ThemeSelection[],
 ): ThemeSelection => {
+  // simple cycle through provided modes (usually ["light","dark"])
   const i = modes.indexOf(effective);
   if (i === -1) return modes[0];
   return modes[(i + 1) % modes.length];

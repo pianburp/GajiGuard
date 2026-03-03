@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { flushSync } from 'react-dom';
 
-type ThemeSelection = 'light' | 'dark' | 'system';
+type ThemeSelection = 'light' | 'dark';
 type Resolved = 'light' | 'dark';
 type Direction = 'btt' | 'ttb' | 'ltr' | 'rtl';
 
@@ -14,13 +14,6 @@ type ChildrenRender =
       effective: ThemeSelection;
       toggleTheme: (theme: ThemeSelection) => void;
     }) => React.ReactNode);
-
-function getSystemEffective(): Resolved {
-  if (typeof window === 'undefined') return 'light';
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light';
-}
 
 function getClipKeyframes(direction: Direction): [string, string] {
   switch (direction) {
@@ -81,15 +74,12 @@ function ThemeToggler({
 
   const toggleTheme = React.useCallback(
     async (theme: ThemeSelection) => {
-      const resolved = theme === 'system' ? getSystemEffective() : theme;
+      // provider is configured with enableSystem={false}, so `theme` should
+      // always be either "light" or "dark". treat it as resolved directly.
+      const resolved = theme as Resolved;
 
       setCurrent({ effective: theme, resolved });
       onImmediateChange?.(theme);
-
-      if (theme === 'system' && resolved === resolvedTheme) {
-        setTheme(theme);
-        return;
-      }
 
       if (!document.startViewTransition) {
         flushSync(() => {

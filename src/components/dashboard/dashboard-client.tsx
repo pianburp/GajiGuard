@@ -7,6 +7,7 @@ import { DayDrawer } from "@/components/dashboard/day-drawer";
 import { ItemForm } from "@/components/dashboard/item-form";
 import { UpcomingSidebar } from "@/components/dashboard/upcoming-sidebar";
 import { AnalyticsBento } from "@/components/dashboard/analytics-bento";
+import { DonationNudge } from "@/components/dashboard/donation-nudge";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -68,6 +69,11 @@ export function DashboardClient({
       occurrences
         .filter((o) => o.status !== "paid")
         .reduce((acc, curr) => acc + curr.amount, 0),
+    [occurrences],
+  );
+
+  const fullMonthlyTotal = useMemo(
+    () => occurrences.reduce((acc, curr) => acc + curr.amount, 0),
     [occurrences],
   );
 
@@ -286,6 +292,13 @@ export function DashboardClient({
         monthDate={monthDate}
       />
 
+      {/* Donation nudge — shown after user has tracked a few items */}
+      {isAuthenticated && (
+        <DonationNudge
+          itemCount={items.length}
+          totalMonthlyCost={fullMonthlyTotal}
+        />
+      )}
 
       {/* Modals */}
       <ItemForm

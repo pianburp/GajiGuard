@@ -13,7 +13,7 @@ export function SmartCancelSuggestions({ suggestions }: SmartCancelSuggestionsPr
   return (
     <Card className="border h-full flex flex-col">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm">Smart Suggestion</CardTitle>
+        <CardTitle className="text-sm">Belanja dengan Bijak</CardTitle>
         <CardDescription className="text-xs">
           Subscriptions that are potentially unused based on payment patterns.
         </CardDescription>

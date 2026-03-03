@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LayoutGroup, motion } from "motion/react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BudgetBar } from "@/components/dashboard/budget-bar";
 import { CategoryDonut } from "@/components/dashboard/category-donut";
 import { SavingsOverview } from "@/components/dashboard/savings-overview";
@@ -26,6 +27,13 @@ interface AnalyticsBentoProps {
   onSetBudget: (amount: number | null) => void;
   monthDate: Date;
 }
+
+const PANEL_TRANSITION = {
+  type: "spring" as const,
+  stiffness: 260,
+  damping: 30,
+  mass: 0.85,
+};
 
 export function AnalyticsBento({
   items,
@@ -62,9 +70,10 @@ export function AnalyticsBento({
 
         {/* Top Right Budget (Spans 4 cols) */}
         <div className="md:col-span-3 lg:col-span-4 flex flex-col">
-          <Card className="flex-1 rounded-xl border border-gray-200/60 dark:border-white/10 bg-gradient-to-br from-white to-gray-50/40 dark:from-[#1c1c1e] dark:to-[#1c1c1e]/80 shadow-sm flex flex-col justify-center">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Monthly Budget</CardTitle>
+          <Card className="flex-1 rounded-xl border border-gray-200/60 dark:border-white/10 bg-gradient-to-br from-white to-gray-50/40 dark:from-[#1c1c1e] dark:to-[#1c1c1e]/80 shadow-sm flex flex-col">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Monthly Budget</CardTitle>
+              <CardDescription className="text-xs">Track your monthly spending limits.</CardDescription>
             </CardHeader>
             <CardContent>
               <BudgetBar
@@ -95,12 +104,21 @@ export function AnalyticsBento({
         {/* Bottom Right Savings Mix (Spans 4 cols) */}
         <div className="md:col-span-3 lg:col-span-4 flex flex-col">
           <Card className="flex-1 rounded-xl border border-gray-200/60 dark:border-white/10 bg-white dark:bg-[#1c1c1e] shadow-sm flex flex-col">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">Category Mix & Savings</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Category Mix & Savings</CardTitle>
+              <CardDescription className="text-xs">Visualize your expenses by category.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 flex-1 flex flex-col justify-between">
-              <CategoryDonut occurrences={occurrences} itemsById={itemsById} isCompact={isSavingsOpen} />
-              <SavingsOverview items={items} isExpanded={isSavingsOpen} onExpandedChange={setIsSavingsOpen} />
+            <CardContent className="flex flex-1 flex-col overflow-x-hidden">
+              <LayoutGroup id="category-savings-panel">
+                <motion.div
+                  layout
+                  transition={PANEL_TRANSITION}
+                  className="flex flex-1 flex-col justify-between space-y-6"
+                >
+                  <CategoryDonut occurrences={occurrences} itemsById={itemsById} isCompact={isSavingsOpen} />
+                  <SavingsOverview items={items} isExpanded={isSavingsOpen} onExpandedChange={setIsSavingsOpen} />
+                </motion.div>
+              </LayoutGroup>
             </CardContent>
           </Card>
         </div>
