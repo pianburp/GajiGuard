@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth/session";
+import { rateLimit } from "@/lib/rate-limit";
 import * as itemService from "@/lib/services/item.service";
 import type { Item } from "@/lib/domain/types";
 
@@ -13,7 +14,7 @@ const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
 
 const itemSchema = z
   .object({
-    id: z.string().min(1),
+    id: z.string().uuid(),
     type: z.enum(["subscription", "bnpl"]),
     name: z.string().min(1).max(255),
     brandIconUrl: z
@@ -89,7 +90,7 @@ const itemSchema = z
   });
 
 const markPaidSchema = z.object({
-  itemId: z.string().min(1),
+  itemId: z.string().uuid(),
   date: dateString,
 });
 
@@ -97,11 +98,13 @@ const markPaidSchema = z.object({
 
 export async function getItems(): Promise<Item[]> {
   const user = await requireAuth();
+  rateLimit(`${user.id}:getItems`);
   return itemService.getItemsByUserId(user.id);
 }
 
 export async function upsertItem(raw: unknown): Promise<void> {
   const user = await requireAuth();
+  rateLimit(`${user.id}:upsertItem`, 20);
   const data = itemSchema.parse(raw);
   await itemService.upsertItem(user.id, data);
 }
@@ -111,12 +114,14 @@ export async function markItemPaid(
   date: string,
 ): Promise<Item | null> {
   const user = await requireAuth();
+  rateLimit(`${user.id}:markItemPaid`, 20);
   const input = markPaidSchema.parse({ itemId, date });
   return itemService.markItemPaid(input.itemId, input.date, user.id);
 }
 
 export async function deleteItem(itemId: string): Promise<boolean> {
   const user = await requireAuth();
-  const id = z.string().min(1).parse(itemId);
+  rateLimit(`${user.id}:deleteItem`, 10);
+  const id = z.string().uuid().parse(itemId);
   return itemService.deleteItem(id, user.id);
 }
