@@ -123,9 +123,6 @@ export function Navbar({ isAuthenticated, email, avatarUrl }: NavbarProps) {
           </Link>
 
           <nav className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" asChild>
-              <Link href="/kira">Kira</Link>
-            </Button>
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild id="user-menu-trigger">

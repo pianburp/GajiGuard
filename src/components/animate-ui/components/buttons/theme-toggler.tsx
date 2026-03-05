@@ -53,11 +53,14 @@ function ThemeTogglerButton({
   ...props
 }: ThemeTogglerButtonProps) {
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => setMounted(true), []);
 
   return (
     <ThemeTogglerPrimitive
       theme={theme as ThemeSelection}
-      resolvedTheme={resolvedTheme as Resolved}
+      resolvedTheme={(mounted ? resolvedTheme : undefined) as Resolved}
       setTheme={setTheme}
       direction={direction}
       onImmediateChange={onImmediateChange}
@@ -72,7 +75,7 @@ function ThemeTogglerButton({
           }}
           {...props}
         >
-          {getIcon(effective, resolved, modes)}
+          {mounted ? getIcon(effective, resolved, modes) : <span className="inline-block w-6 h-6" />}
         </button>
       )}
     </ThemeTogglerPrimitive>

@@ -10,6 +10,7 @@ import { RecurringCostHeatmap } from "@/components/dashboard/recurring-cost-heat
 import { SmartCancelSuggestions } from "@/components/dashboard/smart-cancel-suggestions";
 import { SubscriptionHealthAudit } from "@/components/dashboard/subscription-health-audit";
 import { MonthlyReviewPrompt } from "@/components/dashboard/monthly-review-prompt";
+import { PersonalSummaryShareCard } from "@/components/dashboard/personal-summary-share-card";
 import {
   buildMonthlySpendingHeatmap,
   buildSubscriptionHealth,
@@ -70,7 +71,7 @@ export function AnalyticsBento({
 
         {/* Top Right Budget (Spans 4 cols) */}
         <div className="md:col-span-3 lg:col-span-4 flex flex-col">
-          <Card className="flex-1 rounded-xl border border-gray-200/60 dark:border-white/10 bg-gradient-to-br from-white to-gray-50/40 dark:from-[#1c1c1e] dark:to-[#1c1c1e]/80 shadow-sm flex flex-col">
+          <Card className="flex-1 rounded-xl border flex flex-col">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">Monthly Budget</CardTitle>
               <CardDescription className="text-xs">Track your monthly spending limits.</CardDescription>
@@ -94,16 +95,23 @@ export function AnalyticsBento({
           </div>
         </div>
 
-        {/* Bottom Middle Suggestions (Spans 3 cols) */}
-        <div className="md:col-span-3 lg:col-span-3 flex flex-col">
-          <div className="flex-1 rounded-xl">
+        {/* Bottom Middle Suggestions + Share Summary (Spans 3 cols) */}
+        <div className="md:col-span-3 lg:col-span-3 flex h-full flex-col gap-5">
+          <div className="rounded-xl">
             <SmartCancelSuggestions suggestions={suggestions} />
+          </div>
+          <div className="flex-1 rounded-xl">
+            <PersonalSummaryShareCard
+              items={items}
+              occurrences={occurrences}
+              monthDate={monthDate}
+            />
           </div>
         </div>
 
         {/* Bottom Right Savings Mix (Spans 4 cols) */}
         <div className="md:col-span-3 lg:col-span-4 flex flex-col">
-          <Card className="flex-1 rounded-xl border border-gray-200/60 dark:border-white/10 bg-white dark:bg-[#1c1c1e] shadow-sm flex flex-col">
+          <Card className="flex-1 rounded-xl border flex flex-col">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">Category Mix & Savings</CardTitle>
               <CardDescription className="text-xs">Visualize your expenses by category.</CardDescription>
