@@ -9,6 +9,10 @@ export const authClient = createAuthClient({
       cancelOnTapOutside: false,
       autoSelect: true,
       context: "signin",
+      promptOptions: {
+        // Use classic One Tap prompt mode to avoid FedCM-specific production issues.
+        fedCM: false,
+      },
     }),
   ],
 });
