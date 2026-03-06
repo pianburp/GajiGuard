@@ -116,7 +116,7 @@ export function AnalyticsBento({
               <CardTitle className="text-sm">Category Mix & Savings</CardTitle>
               <CardDescription className="text-xs">Visualize your expenses by category.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-1 flex-col overflow-x-hidden">
+            <CardContent className="flex flex-1 flex-col overflow-hidden">
               <LayoutGroup id="category-savings-panel">
                 <motion.div
                   layout

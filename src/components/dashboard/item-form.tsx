@@ -27,6 +27,7 @@ import {
   getBrandfetchIconUrl,
   searchRecognizedSubscriptions,
   searchBnplSubscriptions,
+  suggestCategoryForItem,
 } from "@/lib/brandfetch";
 import type { BillingCycle, Category, Item, ItemType } from "@/lib/domain/types";
 import { Checkbox } from "@/components/animate-ui/components/headless/checkbox";
@@ -38,6 +39,9 @@ import {
   Palette,
   Percent,
   Tag,
+  Hash,
+  CalendarDays,
+  LayoutGrid
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrandIcon } from "@/components/dashboard/brand-icon";
@@ -229,13 +233,17 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
           <Tabs
             value={type}
             onValueChange={(v) =>
-              setDraft((prev) => ({
-                ...prev,
-                type: v as ItemType,
-                ...(v === "bnpl"
-                  ? { recognizedDomain: "", brandIconUrl: "" }
-                  : {}),
-              }))
+              setDraft((prev) => {
+                const nextType = v as ItemType;
+                return {
+                  ...prev,
+                  type: nextType,
+                  category: suggestCategoryForItem(prev.name, nextType),
+                  ...(nextType === "bnpl"
+                    ? { recognizedDomain: "", brandIconUrl: "" }
+                    : {}),
+                };
+              })
             }
             className="w-full"
           >
@@ -251,151 +259,200 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
             </TabsList>
           </Tabs>
 
-          <Separator />
+          <Separator className="bg-border/60" />
 
-          <div className="space-y-4">
-            {/* Name with autocomplete */}
-            <div className="space-y-2">
-              <Label htmlFor="name" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                <Tag className="h-3 w-3" />
-                Name
-              </Label>
-              <div ref={nameWrapperRef} className="relative">
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <Input
-                      id="name"
-                      value={draft.name}
-                      onChange={(e) => {
-                        const nextName = e.target.value;
-                        setDraft((prev) => ({
-                          ...prev,
-                          name: nextName,
-                          recognizedDomain: "",
-                          brandIconUrl: "",
-                        }));
-                        setShowSuggestions(true);
-                      }}
-                      onFocus={() => setShowSuggestions(true)}
-                      placeholder={type === "bnpl" ? "e.g., Atome, Grab PayLater" : "e.g., Netflix, Spotify"}
-                      maxLength={100}
-                      autoComplete="off"
-                    />
-                  </div>
-                  <BrandIcon
-                    name={draft.name || "brand"}
-                    iconUrl={draft.brandIconUrl}
-                    className="h-9 w-9"
-                  />
-                </div>
-                {showSuggestions && nameSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-9 top-full z-50 mt-1 max-h-52 overflow-y-auto rounded-md border bg-popover p-1 shadow-md">
-                    {nameSuggestions.map((subscription) => (
-                      <button
-                        key={`${subscription.domain}-${subscription.name}`}
-                        type="button"
-                        className="flex w-full items-center gap-2.5 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent transition-colors"
-                        onClick={() => {
+          <div className="space-y-6">
+            {/* Core Details */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <Tag className="h-3 w-3" />
+                  Name
+                </Label>
+                <div ref={nameWrapperRef} className="relative">
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex-1">
+                      <Input
+                        id="name"
+                        value={draft.name}
+                        onChange={(e) => {
+                          const nextName = e.target.value;
                           setDraft((prev) => ({
                             ...prev,
-                            name: subscription.name,
-                            recognizedDomain: subscription.domain,
-                            brandIconUrl: getBrandfetchIconUrl(subscription.domain),
+                            name: nextName,
+                            category: suggestCategoryForItem(nextName, prev.type),
+                            recognizedDomain: "",
+                            brandIconUrl: "",
                           }));
-                          setShowSuggestions(false);
+                          setShowSuggestions(true);
                         }}
-                      >
-                        <BrandIcon
-                          name={subscription.name}
-                          iconUrl={getBrandfetchIconUrl(subscription.domain)}
-                          className="h-6 w-6"
-                        />
-                        <span>{subscription.name}</span>
-                      </button>
-                    ))}
+                        onFocus={() => setShowSuggestions(true)}
+                        placeholder={type === "bnpl" ? "e.g., Atome, Grab PayLater" : "e.g., Netflix, Spotify"}
+                        maxLength={100}
+                        autoComplete="off"
+                        className="bg-muted/50 focus-visible:bg-background transition-colors h-11"
+                      />
+                    </div>
+                    <BrandIcon
+                      name={draft.name || "brand"}
+                      iconUrl={draft.brandIconUrl}
+                      className="h-11 w-11 shrink-0 ring-1 ring-border rounded-xl"
+                    />
                   </div>
-                )}
+                  {showSuggestions && nameSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-14 top-full z-50 mt-1.5 max-h-52 overflow-y-auto rounded-lg border bg-popover p-1 shadow-lg animate-in fade-in-0 zoom-in-95">
+                      {nameSuggestions.map((subscription) => (
+                        <button
+                          key={`${subscription.domain}-${subscription.name}`}
+                          type="button"
+                          className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                          onClick={() => {
+                            setDraft((prev) => ({
+                              ...prev,
+                              name: subscription.name,
+                              category: suggestCategoryForItem(subscription.name, prev.type),
+                              recognizedDomain: subscription.domain,
+                              brandIconUrl: getBrandfetchIconUrl(subscription.domain),
+                            }));
+                            setShowSuggestions(false);
+                          }}
+                        >
+                          <BrandIcon
+                            name={subscription.name}
+                            iconUrl={getBrandfetchIconUrl(subscription.domain)}
+                            className="h-6 w-6 rounded-md"
+                          />
+                          <span className="font-medium">{subscription.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="amount" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <CreditCard className="h-3 w-3" />
+                    Amount (RM)
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="amount"
+                      type="number"
+                      min="0.01"
+                      max="99999.99"
+                      step="0.01"
+                      value={draft.amount}
+                      onChange={(e) => setDraft((prev) => ({ ...prev, amount: e.target.value }))}
+                      placeholder="0.00"
+                      className="pl-8 bg-muted/50 focus-visible:bg-background transition-colors h-10"
+                    />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
+                      RM
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <LayoutGrid className="h-3 w-3" />
+                    Category
+                  </Label>
+                  <Select
+                    value={draft.category}
+                    onValueChange={(v) => setDraft((prev) => ({ ...prev, category: v as Category }))}
+                  >
+                    <SelectTrigger className="bg-muted/50 focus:bg-background transition-colors h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORY_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
-            {/* Amount */}
-            <div className="space-y-2">
-              <Label htmlFor="amount" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                <CreditCard className="h-3 w-3" />
-                Amount (RM)
-              </Label>
-              <Input
-                id="amount"
-                type="number"
-                min="0.01"
-                max="99999.99"
-                step="0.01"
-                value={draft.amount}
-                onChange={(e) => setDraft((prev) => ({ ...prev, amount: e.target.value }))}
-                placeholder="0.00"
-              />
-            </div>
+            <Separator className="bg-border/60" />
 
-            {/* Billing Cycle & Day */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Billing Information */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <Calendar className="h-3 w-3" />
+                    Billing Cycle
+                  </Label>
+                  <Select
+                    value={draft.billingCycle}
+                    onValueChange={(v) =>
+                      setDraft((prev) => ({ ...prev, billingCycle: v as BillingCycle }))
+                    }
+                  >
+                    <SelectTrigger className="bg-muted/50 focus:bg-background transition-colors h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cycleOptions.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {option.charAt(0).toUpperCase() + option.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <Hash className="h-3 w-3" />
+                    Billing Day
+                  </Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="31"
+                    value={draft.billingDay}
+                    onChange={(e) => {
+                      setDraft((prev) => ({ ...prev, billingDay: e.target.value }));
+                    }}
+                    aria-invalid={Boolean(billingDayError ?? errors.billingDay)}
+                    className="bg-muted/50 focus-visible:bg-background transition-colors h-10"
+                  />
+                  {(billingDayError ?? errors.billingDay) && (
+                    <p className="text-xs text-destructive font-medium">{billingDayError ?? errors.billingDay}</p>
+                  )}
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  Billing Cycle
+                <Label htmlFor="startDate" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <CalendarDays className="h-3 w-3" />
+                  Start Date
                 </Label>
-                <Select
-                  value={draft.billingCycle}
-                  onValueChange={(v) =>
-                    setDraft((prev) => ({ ...prev, billingCycle: v as BillingCycle }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cycleOptions.map((option) => (
-                      <SelectItem key={option} value={option}>
-                        {option.charAt(0).toUpperCase() + option.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Billing Day</Label>
                 <Input
-                  type="number"
-                  min="1"
-                  max="31"
-                  value={draft.billingDay}
-                  onChange={(e) => {
-                    setDraft((prev) => ({ ...prev, billingDay: e.target.value }));
-                  }}
-                  aria-invalid={Boolean(billingDayError ?? errors.billingDay)}
+                  id="startDate"
+                  type="date"
+                  value={draft.startDate}
+                  onChange={(e) => setDraft((prev) => ({ ...prev, startDate: e.target.value }))}
+                  className="bg-muted/50 focus-visible:bg-background transition-colors h-10"
                 />
-                {(billingDayError ?? errors.billingDay) && (
-                  <p className="text-xs text-destructive">{billingDayError ?? errors.billingDay}</p>
-                )}
               </div>
             </div>
 
-            {/* Start Date */}
-            <div className="space-y-2">
-              <Label htmlFor="startDate" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Start Date</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={draft.startDate}
-                onChange={(e) => setDraft((prev) => ({ ...prev, startDate: e.target.value }))}
-              />
-            </div>
-
-            {/* BNPL Only Fields */}
+            {/* BNPL Settings */}
             {type === "bnpl" && (
-              <div className="space-y-4">
+              <div className="space-y-4 rounded-xl border bg-muted/40 p-4">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground mb-1">
+                  Installment Details
+                </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="totalInstallments" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Total Installments</Label>
+                    <Label htmlFor="totalInstallments" className="text-xs font-medium text-muted-foreground">
+                      Total Installments
+                    </Label>
                     <Input
                       id="totalInstallments"
                       type="number"
@@ -406,14 +463,15 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                         setDraft((prev) => ({ ...prev, totalInstallments: e.target.value }));
                         setErrors((prev) => ({ ...prev, totalInstallments: undefined }));
                       }}
+                      className="bg-background h-10"
                     />
                     {errors.totalInstallments && (
                       <p className="text-xs text-destructive">{errors.totalInstallments}</p>
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="installmentsPaid" className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Installments Paid (count)
+                    <Label htmlFor="installmentsPaid" className="text-xs font-medium text-muted-foreground">
+                      Installments Paid
                     </Label>
                     <Input
                       id="installmentsPaid"
@@ -424,30 +482,36 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                         setDraft((prev) => ({ ...prev, installmentsPaid: e.target.value }));
                         setErrors((prev) => ({ ...prev, installmentsPaid: undefined }));
                       }}
+                      className="bg-background h-10"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      This is number of installments paid, not total RM amount.
-                    </p>
-                    {errors.installmentsPaid && (
+                    {errors.installmentsPaid ? (
                       <p className="text-xs text-destructive">{errors.installmentsPaid}</p>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground leading-tight">
+                        Enter the count, not RM amount.
+                      </p>
                     )}
                   </div>
                 </div>
-                <label className="flex items-center gap-2 rounded-md border p-3">
-                  <Checkbox
-                    checked={draft.isShariah}
-                    onChange={(checked) =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        isShariah: Boolean(checked),
-                        interestRate: checked ? "0" : prev.interestRate,
-                      }))
-                    }
-                  />
-                  <span className="text-sm">Shariah-compliant plan</span>
-                </label>
+
+                <div className="pt-2">
+                  <label className="flex items-center gap-3 rounded-lg border bg-background p-3 hover:bg-muted/50 transition-colors cursor-pointer select-none">
+                    <Checkbox
+                      checked={draft.isShariah}
+                      onChange={(checked) =>
+                        setDraft((prev) => ({
+                          ...prev,
+                          isShariah: Boolean(checked),
+                          interestRate: checked ? "0" : prev.interestRate,
+                        }))
+                      }
+                    />
+                    <span className="text-sm font-medium">Shariah-compliant plan</span>
+                  </label>
+                </div>
+
                 {!draft.isShariah && (
-                  <div className="space-y-2">
+                  <div className="space-y-2 pt-2">
                     <Label
                       htmlFor="interestRate"
                       className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"
@@ -455,103 +519,88 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                       <Percent className="h-3 w-3" />
                       Interest (%)
                     </Label>
-                    <Input
-                      id="interestRate"
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={draft.interestRate}
-                      onChange={(e) => {
-                        setDraft((prev) => ({ ...prev, interestRate: e.target.value }));
-                        setErrors((prev) => ({ ...prev, interestRate: undefined }));
-                      }}
-                      placeholder="0"
-                    />
+                    <div className="relative">
+                      <Input
+                        id="interestRate"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={draft.interestRate}
+                        onChange={(e) => {
+                          setDraft((prev) => ({ ...prev, interestRate: e.target.value }));
+                          setErrors((prev) => ({ ...prev, interestRate: undefined }));
+                        }}
+                        placeholder="0"
+                        className="bg-background pr-8 h-10"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
+                        %
+                      </span>
+                    </div>
                     {errors.interestRate && (
                       <p className="text-xs text-destructive">{errors.interestRate}</p>
                     )}
                   </div>
                 )}
                 {draft.isShariah && (
-                  <p className="text-xs text-muted-foreground">
-                    Interest is hidden and set to 0% for Shariah-compliant plans.
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Interest is automatically set to 0% for Shariah-compliant plans.
                   </p>
                 )}
               </div>
             )}
 
-            {/* Category */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                <Tag className="h-3 w-3" />
-                Category
-              </Label>
-              <Select
-                value={draft.category}
-                onValueChange={(v) => setDraft((prev) => ({ ...prev, category: v as Category }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORY_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
+            <Separator className="bg-border/60" />
+
+            {/* Appearance & Notes */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <Palette className="h-3 w-3" />
+                  Color Label
+                </Label>
+                <div className="flex flex-wrap gap-3 pt-1">
+                  {ITEM_COLORS.map((swatch) => (
+                    <button
+                      key={swatch}
+                      type="button"
+                      onClick={() => setDraft((prev) => ({ ...prev, color: swatch }))}
+                      aria-label={`Select ${swatch}`}
+                      className={cn(
+                        "h-8 w-8 rounded-full border-2 transition-all duration-200 shadow-sm",
+                        draft.color === swatch
+                          ? "border-foreground scale-110 ring-2 ring-background ring-offset-1"
+                          : "border-transparent hover:scale-105 opacity-80 hover:opacity-100"
+                      )}
+                      style={{ backgroundColor: swatch }}
+                    />
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Color */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                <Palette className="h-3 w-3" />
-                Color
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                {ITEM_COLORS.map((swatch) => (
-                  <button
-                    key={swatch}
-                    type="button"
-                    onClick={() => setDraft((prev) => ({ ...prev, color: swatch }))}
-                    aria-label={`Select ${swatch}`}
-                    className={cn(
-                      "h-7 w-7 rounded-full border-2 transition-all duration-150",
-                      draft.color === swatch
-                        ? "border-foreground scale-110"
-                        : "border-transparent hover:scale-105"
-                    )}
-                    style={{ backgroundColor: swatch }}
-                  />
-                ))}
+                </div>
               </div>
-            </div>
 
-            {/* Notes */}
-            <div className="space-y-2">
-              <Label htmlFor="notes" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                <FileText className="h-3 w-3" />
-                Notes (optional)
-              </Label>
-              <Input
-                id="notes"
-                value={draft.notes}
-                onChange={(e) => setDraft((prev) => ({ ...prev, notes: e.target.value }))}
-                placeholder="Add any additional details..."
-                maxLength={500}
-              />
+              <div className="space-y-2 pt-2">
+                <Label htmlFor="notes" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <FileText className="h-3 w-3" />
+                  Notes <span className="text-muted-foreground/60 normal-case tracking-normal">(optional)</span>
+                </Label>
+                <Input
+                  id="notes"
+                  value={draft.notes}
+                  onChange={(e) => setDraft((prev) => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Add any additional details..."
+                  maxLength={500}
+                  className="bg-muted/50 focus-visible:bg-background transition-colors h-10"
+                />
+              </div>
             </div>
           </div>
 
-          <Separator />
-
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={onClose} className="flex-1">
+          <div className="flex gap-3 pt-6 mt-6 border-t border-border/60">
+            <Button variant="outline" onClick={onClose} className="flex-1 font-medium h-10">
               Cancel
             </Button>
-            <Button onClick={handleSubmit} className="flex-1">
+            <Button onClick={handleSubmit} className="flex-1 font-medium shadow-sm h-10">
               {editItem ? "Save Changes" : "Add Item"}
             </Button>
           </div>

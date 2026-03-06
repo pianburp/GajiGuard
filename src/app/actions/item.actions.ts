@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireAuth } from "@/lib/auth/session";
 import { rateLimit } from "@/lib/rate-limit";
 import * as itemService from "@/lib/services/item.service";
+import { suggestCategoryForItem } from "@/lib/brandfetch";
 import type { Item } from "@/lib/domain/types";
 
 // ── Validation schemas ───────────────────────────────────────────
@@ -106,7 +107,11 @@ export async function upsertItem(raw: unknown): Promise<void> {
   const user = await requireAuth();
   rateLimit(`${user.id}:upsertItem`, 20);
   const data = itemSchema.parse(raw);
-  await itemService.upsertItem(user.id, data);
+  const normalized: Item = {
+    ...data,
+    category: suggestCategoryForItem(data.name, data.type),
+  };
+  await itemService.upsertItem(user.id, normalized);
 }
 
 export async function markItemPaid(

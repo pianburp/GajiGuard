@@ -914,6 +914,11 @@ function getShareBadge(stats: SummaryStats): string {
 interface InsightData {
   tokens: string[];
   illustrationUrl: string;
+  illustrationSize?: {
+    width: number;
+    height: number;
+    offsetY?: number;
+  };
 }
 
 function getLocalizedInsight(yearlyProjection: number): InsightData {
@@ -926,7 +931,12 @@ function getLocalizedInsight(yearlyProjection: number): InsightData {
         `That's ${nasiLemak.toLocaleString()} NASI LEMAK 😭`,
         `Could've eaten nasi lemak every day for ${years} years.`
       ],
-      illustrationUrl: "/nasi-lemak.svg"
+      illustrationUrl: "/nasi-lemak.svg",
+      illustrationSize: {
+        width: 470,
+        height: 370,
+        offsetY: 70,
+      },
     };
   }
   if (yearlyProjection >= minWage) {
@@ -937,7 +947,12 @@ function getLocalizedInsight(yearlyProjection: number): InsightData {
         `That's ${nasiKerabu.toLocaleString()} NASI KERABU 😭`,
         `Could've eaten nasi kerabu every day for ${months} months.`
       ],
-      illustrationUrl: "/nasi-kerabu.svg"
+      illustrationUrl: "/nasi-kerabu.svg",
+      illustrationSize: {
+        width: 430,
+        height: 340,
+        offsetY: 76,
+      },
     };
   }
   if (yearlyProjection >= minWage / 2) {
@@ -948,7 +963,12 @@ function getLocalizedInsight(yearlyProjection: number): InsightData {
         `That's ${ayamGoreng.toLocaleString()} AYAM GORENG 😭`,
         `Could've eaten ayam goreng every day for ${weeks} weeks.`
       ],
-      illustrationUrl: "/ayam-goreng.svg"
+      illustrationUrl: "/ayam-goreng.svg",
+      illustrationSize: {
+        width: 390,
+        height: 320,
+        offsetY: 80,
+      },
     };
   }
   if (yearlyProjection > 0) {
@@ -959,7 +979,12 @@ function getLocalizedInsight(yearlyProjection: number): InsightData {
         `That's ${tehTarik.toLocaleString()} TEH TARIK 😭`,
         `Could've drank teh tarik every day for ${weeks} weeks.`
       ],
-      illustrationUrl: "/teh-tarik.svg"
+      illustrationUrl: "/teh-tarik.svg",
+      illustrationSize: {
+        width: 250,
+        height: 280,
+        offsetY: 86,
+      },
     };
   }
   return {  
@@ -967,7 +992,12 @@ function getLocalizedInsight(yearlyProjection: number): InsightData {
       "NO DAMAGE YET 😌",
       "Add your subscriptions to see the damage."
     ],
-    illustrationUrl: "/nasi-lemak.svg"
+    illustrationUrl: "/nasi-lemak.svg",
+    illustrationSize: {
+      width: 420,
+      height: 330,
+      offsetY: 74,
+    },
   };
 }
 
@@ -1015,10 +1045,12 @@ async function renderStoryCard(
   let y = flow.y;
   y = renderHook(rendererState, y);
 
-  const illustrationWidth = 450;
-  const illustrationHeight = 355;
+  const defaultIllustration = { width: 450, height: 355, offsetY: 75 };
+  const illustrationWidth = insight.illustrationSize?.width ?? defaultIllustration.width;
+  const illustrationHeight = insight.illustrationSize?.height ?? defaultIllustration.height;
+  const illustrationOffsetY = insight.illustrationSize?.offsetY ?? defaultIllustration.offsetY;
   const illustrationX = flow.x + (flow.maxWidth - illustrationWidth) / 2;
-  const illustrationY = y + 75;
+  const illustrationY = y + illustrationOffsetY;
   await drawIllustration(ctx, insight.illustrationUrl || "/nasi-lemak.svg", illustrationX, illustrationY, illustrationWidth, illustrationHeight);
 
   y += 450; // Make space for illustration

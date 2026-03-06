@@ -1,6 +1,38 @@
+import type { Category, ItemType } from "@/lib/domain/types";
+
 export type RecognizedSubscription = {
   name: string;
   domain: string;
+};
+
+const SUBSCRIPTION_CATEGORY_BY_DOMAIN: Record<string, Category> = {
+  "netflix.com": "entertainment",
+  "disneyplus.com": "entertainment",
+  "viu.com": "entertainment",
+  "primevideo.com": "entertainment",
+  "astroawani.com": "entertainment",
+  "unifi.com.my": "utilities",
+  "spotify.com": "entertainment",
+  "apple.com": "entertainment",
+  "youtube.com": "entertainment",
+  "joox.com": "entertainment",
+  "icloud.com": "utilities",
+  "google.com": "utilities",
+  "chatgpt.com": "education",
+  "claude.ai": "education",
+  "canva.com": "education",
+  "notion.so": "utilities",
+  "microsoft.com": "utilities",
+  "adobe.com": "education",
+  "atome.my": "shopping",
+  "grab.com": "transport",
+  "shopee.com.my": "shopping",
+  "shopee.com": "shopping",
+  "myboost.com.my": "shopping",
+  "maxis.com.my": "utilities",
+  "celcomdigi.com": "utilities",
+  "u.com.my": "utilities",
+  "time.com.my": "utilities",
 };
 
 export const RECOGNIZED_SUBSCRIPTIONS: RecognizedSubscription[] = [
@@ -176,6 +208,30 @@ export function findRecognizedSubscriptionByName(
   if (!best) return null;
   const score = getMatchScore(name, best);
   return score >= 500 ? best : null;
+}
+
+export function findBnplSubscriptionByName(
+  name: string,
+): RecognizedSubscription | null {
+  const [best] = searchBnplSubscriptions(name, 1);
+  if (!best) return null;
+  const score = getMatchScore(name, best);
+  return score >= 500 ? best : null;
+}
+
+export function suggestCategoryForItem(
+  name: string,
+  type: ItemType,
+): Category {
+  if (!name.trim()) return "other";
+
+  const matched =
+    type === "bnpl"
+      ? findBnplSubscriptionByName(name)
+      : findRecognizedSubscriptionByName(name);
+
+  if (!matched) return "other";
+  return SUBSCRIPTION_CATEGORY_BY_DOMAIN[matched.domain] ?? "other";
 }
 
 export function searchBnplSubscriptions(
