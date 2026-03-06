@@ -5,6 +5,7 @@ import { requireAuth } from "@/lib/auth/session";
 import { rateLimit } from "@/lib/rate-limit";
 import * as itemService from "@/lib/services/item.service";
 import { suggestCategoryForItem } from "@/lib/brandfetch";
+import { toLocalDateKey } from "@/lib/date";
 import type { Item } from "@/lib/domain/types";
 
 // ── Validation schemas ───────────────────────────────────────────
@@ -12,6 +13,13 @@ import type { Item } from "@/lib/domain/types";
 const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
   message: "Expected date in YYYY-MM-DD format",
 });
+
+const startDateString = dateString.refine(
+  (value) => value <= toLocalDateKey(new Date()),
+  {
+    message: "Start date cannot be in the future",
+  },
+);
 
 const itemSchema = z
   .object({
@@ -29,7 +37,7 @@ const itemSchema = z
     currency: z.literal("MYR"),
     billingCycle: z.enum(["weekly", "biweekly", "monthly", "yearly"]),
     billingDay: z.number().int().min(1).max(31),
-    startDate: dateString,
+    startDate: startDateString,
     category: z.enum([
       "entertainment",
       "food",

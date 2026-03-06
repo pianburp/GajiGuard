@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as DateCalendar } from "@/components/ui/calendar";
 import { CATEGORY_OPTIONS, ITEM_COLORS } from "@/lib/constants";
 import { toLocalDateKey } from "@/lib/date";
 import {
@@ -32,11 +34,10 @@ import {
 import type { BillingCycle, Category, Item, ItemType } from "@/lib/domain/types";
 import { Checkbox } from "@/components/animate-ui/components/headless/checkbox";
 import {
-  Calendar,
+  Calendar as CalendarIcon,
   CreditCard,
   FileText,
   Package,
-  Palette,
   Percent,
   Tag,
   Hash,
@@ -45,6 +46,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrandIcon } from "@/components/dashboard/brand-icon";
+import { format } from "date-fns";
 
 interface ItemFormProps {
   open: boolean;
@@ -57,8 +59,26 @@ function todayDate(): string {
   return toLocalDateKey(new Date());
 }
 
+function fromDateKey(value: string): Date | undefined {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+  const [y, m, d] = value.split("-").map(Number);
+  if (!y || !m || !d) return undefined;
+  const parsed = new Date(y, m - 1, d);
+  return toLocalDateKey(parsed) === value ? parsed : undefined;
+}
+
 function makeId(): string {
   return crypto.randomUUID();
+}
+
+function pickAutoColor(name: string, category: Category): string {
+  const seed = (name.trim().toLowerCase() || category).trim();
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  return ITEM_COLORS[Math.abs(hash) % ITEM_COLORS.length] ?? ITEM_COLORS[0];
 }
 
 type ItemDraft = {
@@ -107,6 +127,7 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
   const [draft, setDraft] = useState(() => toDraft(editItem));
   const [errors, setErrors] = useState<{
     billingDay?: string;
+    startDate?: string;
     totalInstallments?: string;
     installmentsPaid?: string;
     interestRate?: string;
@@ -115,6 +136,7 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
   const nameWrapperRef = useRef<HTMLDivElement>(null);
   const { type } = draft;
   const trimmedName = draft.name.trim();
+  const isEditing = Boolean(editItem);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -140,12 +162,43 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
 
   const billingDayError = useMemo(() => {
     const value = draft.billingDay.trim();
-    if (!value) return "Billing day is required.";
+    if (!value) return "Payment day is required.";
     const parsed = Number(value);
     if (!Number.isInteger(parsed) || parsed < 1 || parsed > 31)
-      return "Billing day must be a whole number between 1 and 31.";
+      return "Payment day must be a whole number between 1 and 31.";
     return undefined;
   }, [draft.billingDay]);
+
+  const startDateError = useMemo(() => {
+    const value = draft.startDate.trim();
+    if (!value) return "Start date is required.";
+    if (value > todayDate()) return "Start date cannot be in the future.";
+    return undefined;
+  }, [draft.startDate]);
+
+  const startDateValue = useMemo(
+    () => fromDateKey(draft.startDate),
+    [draft.startDate],
+  );
+
+  const perInstallmentAmount = useMemo(() => {
+    if (type !== "bnpl") return null;
+    const parsedAmount = Number(draft.amount);
+    const parsedTotal = Number(draft.totalInstallments);
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return null;
+    if (!Number.isInteger(parsedTotal) || parsedTotal < 1) return null;
+    return parsedAmount / parsedTotal;
+  }, [type, draft.amount, draft.totalInstallments]);
+
+  const perInstallmentAmountLabel = useMemo(() => {
+    if (perInstallmentAmount === null) return null;
+    return new Intl.NumberFormat("en-MY", {
+      style: "currency",
+      currency: "MYR",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(perInstallmentAmount);
+  }, [perInstallmentAmount]);
 
   const handleSubmit = () => {
     const parsedAmount = Number(draft.amount);
@@ -161,18 +214,22 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
       parsedBillingDay < 1 ||
       parsedBillingDay > 31
     ) {
-      nextErrors.billingDay = "Billing day must be a whole number between 1 and 31.";
+      nextErrors.billingDay = "Payment day must be a whole number between 1 and 31.";
+    }
+    if (startDateError) {
+      nextErrors.startDate = startDateError;
     }
     if (draft.type === "bnpl") {
       if (!Number.isInteger(parsedTotal) || parsedTotal < 1) {
         nextErrors.totalInstallments =
           "Total installments must be a whole number of at least 1.";
       }
-      if (!Number.isInteger(parsedPaid) || parsedPaid < 0) {
+      if (isEditing && (!Number.isInteger(parsedPaid) || parsedPaid < 0)) {
         nextErrors.installmentsPaid =
           "Installments paid must be a whole number of at least 0.";
       }
       if (
+        isEditing &&
         Number.isInteger(parsedTotal) &&
         Number.isInteger(parsedPaid) &&
         parsedPaid > parsedTotal
@@ -203,14 +260,14 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
       billingDay: parsedBillingDay,
       startDate: draft.startDate,
       category: draft.category as Item["category"],
-      color: draft.color,
+      color: editItem?.color ?? pickAutoColor(draft.name, draft.category),
       notes: draft.notes.trim(),
       isActive: true,
       isShariah: draft.type === "bnpl" ? draft.isShariah : false,
       interestRate:
         draft.type === "bnpl" && !draft.isShariah ? parsedInterestRate : 0,
       totalInstallments: draft.type === "bnpl" ? parsedTotal : null,
-      installmentsPaid: draft.type === "bnpl" ? parsedPaid : 0,
+      installmentsPaid: draft.type === "bnpl" ? (isEditing ? parsedPaid : 0) : 0,
       paidDates: editItem?.paidDates ?? [],
     });
     onClose();
@@ -299,6 +356,7 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                       className="h-11 w-11 shrink-0 ring-1 ring-border rounded-xl"
                     />
                   </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground">Brand preview</p>
                   {showSuggestions && nameSuggestions.length > 0 && (
                     <div className="absolute left-0 right-14 top-full z-50 mt-1.5 max-h-52 overflow-y-auto rounded-lg border bg-popover p-1 shadow-lg animate-in fade-in-0 zoom-in-95">
                       {nameSuggestions.map((subscription) => (
@@ -330,8 +388,29 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="min-w-0 space-y-2">
+                  <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <LayoutGrid className="h-3 w-3" />
+                    Category
+                  </Label>
+                  <Select
+                    value={draft.category}
+                    onValueChange={(v) => setDraft((prev) => ({ ...prev, category: v as Category }))}
+                  >
+                    <SelectTrigger className="h-10 w-full bg-muted/50 transition-colors focus:bg-background">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORY_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="min-w-0 space-y-2">
                   <Label htmlFor="amount" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     <CreditCard className="h-3 w-3" />
                     Amount (RM)
@@ -347,32 +426,11 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                       onChange={(e) => setDraft((prev) => ({ ...prev, amount: e.target.value }))}
                       placeholder="0.00"
                       className="pl-8 bg-muted/50 focus-visible:bg-background transition-colors h-10"
-                    />
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">
-                      RM
-                    </span>
+                   />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    <LayoutGrid className="h-3 w-3" />
-                    Category
-                  </Label>
-                  <Select
-                    value={draft.category}
-                    onValueChange={(v) => setDraft((prev) => ({ ...prev, category: v as Category }))}
-                  >
-                    <SelectTrigger className="bg-muted/50 focus:bg-background transition-colors h-10">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORY_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {type === "bnpl" && (
+                    <p className="text-[10px] text-muted-foreground leading-tight">Total purchase amount</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -380,11 +438,12 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
             <Separator className="bg-border/60" />
 
             {/* Billing Information */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+            <div className="space-y-4 rounded-xl border bg-muted/30 p-4">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground">Billing</h4>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div className="min-w-0 space-y-2">
                   <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
+                    <CalendarIcon className="h-3 w-3" />
                     Billing Cycle
                   </Label>
                   <Select
@@ -393,7 +452,7 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                       setDraft((prev) => ({ ...prev, billingCycle: v as BillingCycle }))
                     }
                   >
-                    <SelectTrigger className="bg-muted/50 focus:bg-background transition-colors h-10">
+                    <SelectTrigger className="h-10 w-full bg-muted/50 transition-colors focus:bg-background">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -405,10 +464,10 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
+                <div className="min-w-0 space-y-2">
                   <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     <Hash className="h-3 w-3" />
-                    Billing Day
+                    Payment Day
                   </Label>
                   <Input
                     type="number"
@@ -425,20 +484,45 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                     <p className="text-xs text-destructive font-medium">{billingDayError ?? errors.billingDay}</p>
                   )}
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="startDate" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  <CalendarDays className="h-3 w-3" />
-                  Start Date
-                </Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={draft.startDate}
-                  onChange={(e) => setDraft((prev) => ({ ...prev, startDate: e.target.value }))}
-                  className="bg-muted/50 focus-visible:bg-background transition-colors h-10"
-                />
+                <div className="min-w-0 space-y-2">
+                  <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <CalendarDays className="h-3 w-3" />
+                    Start Date
+                  </Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        aria-invalid={Boolean(startDateError ?? errors.startDate)}
+                        className={cn(
+                          "h-10 w-full justify-start bg-muted/50 text-left font-normal hover:bg-background",
+                          "overflow-hidden text-ellipsis whitespace-nowrap",
+                          !startDateValue && "text-muted-foreground",
+                        )}
+                      >
+                        <CalendarDays className="mr-2 h-4 w-4" />
+                        {startDateValue ? format(startDateValue, "dd/MM/yyyy") : "Pick a start date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <DateCalendar
+                        mode="single"
+                        selected={startDateValue}
+                        onSelect={(date) => {
+                          if (!date) return;
+                          setDraft((prev) => ({ ...prev, startDate: toLocalDateKey(date) }));
+                          setErrors((prev) => ({ ...prev, startDate: undefined }));
+                        }}
+                        disabled={(date) => toLocalDateKey(date) > todayDate()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {(startDateError ?? errors.startDate) && (
+                    <p className="text-xs text-destructive font-medium">{startDateError ?? errors.startDate}</p>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -448,7 +532,7 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                 <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground mb-1">
                   Installment Details
                 </h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="totalInstallments" className="text-xs font-medium text-muted-foreground">
                       Total Installments
@@ -465,10 +549,46 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                       }}
                       className="bg-background h-10"
                     />
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {[3, 6, 12].map((preset) => (
+                        <Button
+                          key={preset}
+                          type="button"
+                          variant="outline"
+                          className="h-7 px-2 text-[11px]"
+                          onClick={() => {
+                            setDraft((prev) => ({ ...prev, totalInstallments: String(preset) }));
+                            setErrors((prev) => ({ ...prev, totalInstallments: undefined }));
+                          }}
+                        >
+                          {preset} mo
+                        </Button>
+                      ))}
+                    </div>
                     {errors.totalInstallments && (
                       <p className="text-xs text-destructive">{errors.totalInstallments}</p>
                     )}
                   </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-muted-foreground">Plan Type</Label>
+                    <label className="flex h-10 items-center gap-3 rounded-lg border bg-background px-3 hover:bg-muted/50 transition-colors cursor-pointer select-none">
+                      <Checkbox
+                        checked={draft.isShariah}
+                        onChange={(checked) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            isShariah: Boolean(checked),
+                            interestRate: checked ? "0" : prev.interestRate,
+                          }))
+                        }
+                      />
+                      <span className="text-sm font-medium text-emerald-600">Shariah-compliant</span>
+                    </label>
+                  </div>
+                </div>
+
+                {isEditing && (
                   <div className="space-y-2">
                     <Label htmlFor="installmentsPaid" className="text-xs font-medium text-muted-foreground">
                       Installments Paid
@@ -492,23 +612,14 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                       </p>
                     )}
                   </div>
-                </div>
+                )}
 
-                <div className="pt-2">
-                  <label className="flex items-center gap-3 rounded-lg border bg-background p-3 hover:bg-muted/50 transition-colors cursor-pointer select-none">
-                    <Checkbox
-                      checked={draft.isShariah}
-                      onChange={(checked) =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          isShariah: Boolean(checked),
-                          interestRate: checked ? "0" : prev.interestRate,
-                        }))
-                      }
-                    />
-                    <span className="text-sm font-medium">Shariah-compliant plan</span>
-                  </label>
-                </div>
+                {perInstallmentAmountLabel && (
+                  <div className="rounded-lg border bg-background p-3">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Per-installment payment</p>
+                    <p className="text-base font-semibold text-foreground">{perInstallmentAmountLabel}</p>
+                  </div>
+                )}
 
                 {!draft.isShariah && (
                   <div className="space-y-2 pt-2">
@@ -541,11 +652,14 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                     {errors.interestRate && (
                       <p className="text-xs text-destructive">{errors.interestRate}</p>
                     )}
+                    <p className="text-[10px] text-muted-foreground leading-tight">
+                      Applied to the financed purchase amount.
+                    </p>
                   </div>
                 )}
                 {draft.isShariah && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    Interest is automatically set to 0% for Shariah-compliant plans.
+                    Interest is automatically set to 0% for Shariah-compliant.
                   </p>
                 )}
               </div>
@@ -553,32 +667,8 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
 
             <Separator className="bg-border/60" />
 
-            {/* Appearance & Notes */}
+            {/* Notes */}
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  <Palette className="h-3 w-3" />
-                  Color Label
-                </Label>
-                <div className="flex flex-wrap gap-3 pt-1">
-                  {ITEM_COLORS.map((swatch) => (
-                    <button
-                      key={swatch}
-                      type="button"
-                      onClick={() => setDraft((prev) => ({ ...prev, color: swatch }))}
-                      aria-label={`Select ${swatch}`}
-                      className={cn(
-                        "h-8 w-8 rounded-full border-2 transition-all duration-200 shadow-sm",
-                        draft.color === swatch
-                          ? "border-foreground scale-110 ring-2 ring-background ring-offset-1"
-                          : "border-transparent hover:scale-105 opacity-80 hover:opacity-100"
-                      )}
-                      style={{ backgroundColor: swatch }}
-                    />
-                  ))}
-                </div>
-              </div>
-
               <div className="space-y-2 pt-2">
                 <Label htmlFor="notes" className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   <FileText className="h-3 w-3" />
