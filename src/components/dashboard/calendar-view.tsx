@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { toLocalDateKey } from "@/lib/date";
+import { cn } from "@/lib/utils/cn";
+import { toLocalDateKey } from "@/lib/utils/date";
 import type { Item, Occurrence } from "@/lib/domain/types";
 import { BrandIcon } from "@/components/dashboard/brand-icon";
 import { Button } from "@/components/ui/button";

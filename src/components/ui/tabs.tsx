@@ -16,7 +16,7 @@ import {
   type TabsContentProps as TabsContentPrimitiveProps,
   type TabsContentsProps as TabsContentsPrimitiveProps,
 } from "@/components/animate-ui/primitives/animate/tabs"
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils/cn"
 
 type TabsProps = TabsPrimitiveProps
 

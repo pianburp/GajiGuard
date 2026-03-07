@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { oneTap } from "better-auth/plugins";
 import { db } from "@/lib/db";
-import { env } from "@/lib/env";
+import { env } from "@/lib/config/env";
 
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,

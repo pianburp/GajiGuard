@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { formatRM, formatRelativeDate, formatShortDate } from "@/lib/format";
+import { formatRM, formatRelativeDate, formatShortDate } from "@/lib/utils/format";
 import type { Item, Occurrence } from "@/lib/domain/types";
 import {
   Wallet,
@@ -18,7 +18,7 @@ import {
   Check,
 } from "lucide-react";
 import { BrandIcon } from "@/components/dashboard/brand-icon";
-import { CATEGORY_OPTIONS } from "@/lib/constants";
+import { CATEGORY_OPTIONS } from "@/lib/config/constants";
 
 interface UpcomingSidebarProps {
   monthlyTotal: number;

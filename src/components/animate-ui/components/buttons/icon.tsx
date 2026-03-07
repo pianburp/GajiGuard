@@ -7,7 +7,7 @@ import {
   Button as ButtonPrimitive,
   type ButtonProps as ButtonPrimitiveProps,
 } from '@/components/animate-ui/primitives/buttons/button';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/cn';
 import {
   Particles,
   ParticlesEffect,

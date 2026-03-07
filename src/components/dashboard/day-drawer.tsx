@@ -11,12 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatRM } from "@/lib/format";
+import { formatRM } from "@/lib/utils/format";
 import { calculateAnnualSavings } from "@/lib/domain/item";
 import type { Item, Occurrence } from "@/lib/domain/types";
 import { Check, Pencil, Trash2, CreditCard, Package, Calendar, DollarSign } from "lucide-react";
 import { BrandIcon } from "@/components/dashboard/brand-icon";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/cn";
 
 interface DayDrawerProps {
   date: string | null;

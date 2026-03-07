@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useRef, useTransition } from "react";
 import { authClient } from "@/lib/auth/auth-client";
 import { CalendarView } from "@/components/dashboard/calendar-view";
 import { DayDrawer } from "@/components/dashboard/day-drawer";
@@ -13,91 +13,79 @@ import { EmptyState } from "@/components/dashboard/empty-state";
 import { GajiCountdown } from "@/components/dashboard/gaji-countdown";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
-import { getOccurrencesForMonth } from "@/lib/domain/schedule";
 import {
-  upsertItem,
-  markItemPaid,
   deleteItem,
+  getDashboardData,
+  markItemPaid,
   setBudget,
   setGajiDay as setGajiDayAction,
+  upsertItem,
 } from "@/app/actions";
-import { formatRM } from "@/lib/format";
-
+import { formatRM } from "@/lib/utils/format";
+import type { DashboardData } from "@/lib/domain/dashboard";
 import type { Item } from "@/lib/domain/types";
 import { Plus, CalendarFold, AlertTriangle, X } from "lucide-react";
 
 interface DashboardClientProps {
   isAuthenticated: boolean;
-  initialItems?: Item[];
-  initialBudget?: number | null;
-  initialGajiDay?: number;
+  initialDashboardData: DashboardData | null;
+  initialYear: number;
+  initialMonth: number;
 }
 
 export function DashboardClient({
   isAuthenticated,
-  initialItems = [],
-  initialBudget = null,
-  initialGajiDay = 25,
+  initialDashboardData,
+  initialYear,
+  initialMonth,
 }: DashboardClientProps) {
-  const [items, setItems] = useState<Item[]>(initialItems);
-  const [budget, setBudgetState] = useState<number | null>(initialBudget);
-  const [gajiDay, setGajiDayState] = useState<number>(initialGajiDay);
-  const [monthDate, setMonthDate] = useState(() => new Date());
+  const [items, setItems] = useState<Item[]>(initialDashboardData?.items ?? []);
+  const [occurrences, setOccurrences] = useState(initialDashboardData?.occurrences ?? []);
+  const [healthRows, setHealthRows] = useState(initialDashboardData?.healthRows ?? []);
+  const [suggestions, setSuggestions] = useState(initialDashboardData?.suggestions ?? []);
+  const [auditSummary, setAuditSummary] = useState(initialDashboardData?.auditSummary ?? {
+    keepCount: 0,
+    reviewCount: 0,
+    cancelCount: 0,
+    reviewSavings: 0,
+    cancelSavings: 0,
+    inactiveCount: 0,
+  });
+  const [heatmap, setHeatmap] = useState(initialDashboardData?.heatmap ?? []);
+  const [budget, setBudgetState] = useState<number | null>(initialDashboardData?.budget ?? null);
+  const [budgetStatus, setBudgetStatus] = useState(
+    initialDashboardData?.budgetStatus ?? {
+      spent: 0,
+      remaining: null,
+      overBudget: false,
+    },
+  );
+  const [monthlyTotal, setMonthlyTotal] = useState(initialDashboardData?.monthlyTotal ?? 0);
+  const [previousMonthTotal, setPreviousMonthTotal] = useState(
+    initialDashboardData?.previousMonthTotal ?? 0,
+  );
+  const [gajiDay, setGajiDayState] = useState<number>(initialDashboardData?.gajiDay ?? 25);
+  const [monthDate, setMonthDate] = useState(() => new Date(initialYear, initialMonth, 1));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Item | null>(null);
-  const [formPrefill, setFormPrefill] = useState<Partial<ItemDraft> | undefined>(
-    undefined,
-  );
+  const [formPrefill, setFormPrefill] = useState<Partial<ItemDraft> | undefined>(undefined);
   const [formNonce, setFormNonce] = useState(0);
   const [overdueDismissed, setOverdueDismissed] = useState(false);
+  const [, startTransition] = useTransition();
+  const latestLoadIdRef = useRef(0);
 
-  const occurrences = useMemo(
-    () =>
-      getOccurrencesForMonth(
-        items,
-        monthDate.getFullYear(),
-        monthDate.getMonth(),
-      ),
-    [items, monthDate],
-  );
-
-  const itemsById = useMemo(
-    () => Object.fromEntries(items.map((item) => [item.id, item])),
-    [items],
-  );
+  const itemsById = Object.fromEntries(items.map((item) => [item.id, item]));
 
   const dayOccurrences = useMemo(
     () => occurrences.filter((o) => o.date === selectedDate),
     [occurrences, selectedDate],
   );
 
-  const monthlyTotal = useMemo(
-    () =>
-      occurrences
-        .filter((o) => o.status !== "paid")
-        .reduce((acc, curr) => acc + curr.amount, 0),
-    [occurrences],
-  );
-
   const fullMonthlyTotal = useMemo(
     () => occurrences.reduce((acc, curr) => acc + curr.amount, 0),
     [occurrences],
   );
-
-  const previousMonthTotal = useMemo(() => {
-    const d = new Date(monthDate);
-    d.setMonth(d.getMonth() - 1);
-    const prevOccurrences = getOccurrencesForMonth(
-      items,
-      d.getFullYear(),
-      d.getMonth(),
-    );
-    return prevOccurrences
-      .filter((o) => o.status !== "paid")
-      .reduce((acc, curr) => acc + curr.amount, 0);
-  }, [items, monthDate]);
 
   const overdueInfo = useMemo(() => {
     const missed = occurrences.filter((o) => o.status === "missed");
@@ -113,6 +101,56 @@ export function DashboardClient({
       callbackURL: "/",
     });
   };
+
+  const applyDashboardData = useCallback((data: DashboardData) => {
+    setItems(data.items);
+    setOccurrences(data.occurrences);
+    setHealthRows(data.healthRows);
+    setSuggestions(data.suggestions);
+    setAuditSummary(data.auditSummary);
+    setHeatmap(data.heatmap);
+    setBudgetState(data.budget);
+    setBudgetStatus(data.budgetStatus);
+    setMonthlyTotal(data.monthlyTotal);
+    setPreviousMonthTotal(data.previousMonthTotal);
+    setGajiDayState(data.gajiDay);
+    setOverdueDismissed(false);
+  }, []);
+
+  const loadDashboardMonth = useCallback(
+    (date: Date) => {
+      if (!isAuthenticated) {
+        setMonthDate(date);
+        return;
+      }
+
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const loadId = latestLoadIdRef.current + 1;
+      latestLoadIdRef.current = loadId;
+      setMonthDate(date);
+
+      startTransition(() => {
+        void getDashboardData(year, month)
+          .then((data) => {
+            if (latestLoadIdRef.current !== loadId) return;
+            applyDashboardData(data);
+            setSelectedDate(null);
+          })
+          .catch(() => undefined);
+      });
+    },
+    [applyDashboardData, isAuthenticated, startTransition],
+  );
+
+  const refreshDashboardData = useCallback(async () => {
+    if (!isAuthenticated) return;
+    const data = await getDashboardData(
+      monthDate.getFullYear(),
+      monthDate.getMonth(),
+    );
+    applyDashboardData(data);
+  }, [applyDashboardData, isAuthenticated, monthDate]);
 
   const onAddClick = useCallback(() => {
     if (!isAuthenticated) {
@@ -149,11 +187,12 @@ export function DashboardClient({
       setBudgetState(amount);
       try {
         await setBudget(amount);
+        await refreshDashboardData();
       } catch {
         setBudgetState(prev);
       }
     },
-    [isAuthenticated, budget],
+    [budget, isAuthenticated, refreshDashboardData],
   );
 
   const onSetGajiDay = useCallback(
@@ -189,11 +228,12 @@ export function DashboardClient({
 
       try {
         await upsertItem(item);
+        await refreshDashboardData();
       } catch {
         setItems(items);
       }
     },
-    [isAuthenticated, items],
+    [isAuthenticated, items, refreshDashboardData],
   );
 
   const onMarkPaid = useCallback(
@@ -226,11 +266,12 @@ export function DashboardClient({
             prev.map((item) => (item.id === updated.id ? updated : item)),
           );
         }
+        await refreshDashboardData();
       } catch {
         setItems(items);
       }
     },
-    [isAuthenticated, items],
+    [isAuthenticated, items, refreshDashboardData],
   );
 
   const onDelete = useCallback(
@@ -246,12 +287,16 @@ export function DashboardClient({
 
       try {
         const ok = await deleteItem(itemId);
-        if (!ok) setItems(prev);
+        if (!ok) {
+          setItems(prev);
+          return;
+        }
+        await refreshDashboardData();
       } catch {
         setItems(prev);
       }
     },
-    [isAuthenticated, items],
+    [isAuthenticated, items, refreshDashboardData],
   );
 
   return (
@@ -315,7 +360,7 @@ export function DashboardClient({
               selectedDate={selectedDate}
               occurrences={occurrences}
               itemsById={itemsById}
-              onMonthChange={setMonthDate}
+              onMonthChange={loadDashboardMonth}
               onSelectDate={(date) => setSelectedDate(date)}
               onMarkPaid={onMarkPaid}
             />
@@ -334,8 +379,13 @@ export function DashboardClient({
             occurrences={occurrences}
             itemsById={itemsById}
             budget={budget}
+            budgetStatus={budgetStatus}
             onSetBudget={onSetBudget}
             monthDate={monthDate}
+            healthRows={healthRows}
+            suggestions={suggestions}
+            auditSummary={auditSummary}
+            heatmap={heatmap}
           />
 
           {isAuthenticated && (

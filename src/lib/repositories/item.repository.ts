@@ -56,35 +56,7 @@ export async function insert(userId: string, data: Item) {
 /** Update an existing item row. */
 export async function update(
   id: string,
-  data: Partial<{
-    type: "subscription" | "bnpl";
-    name: string;
-    brandIconUrl: string | null;
-    amount: number;
-    currency: string;
-    billingCycle: "weekly" | "biweekly" | "monthly" | "yearly";
-    billingDay: number;
-    startDate: string;
-    category:
-      | "entertainment"
-      | "food"
-      | "transport"
-      | "shopping"
-      | "gadget"
-      | "insurance"
-      | "education"
-      | "health"
-      | "utilities"
-      | "other";
-    color: string;
-    notes: string;
-    isActive: boolean;
-    isShariah: boolean;
-    interestRate: number;
-    totalInstallments: number | null;
-    installmentsPaid: number;
-    paidDates: string[];
-  }>,
+  data: Partial<Omit<Item, "id">>,
 ) {
   await db
     .update(itemTable)

@@ -2,10 +2,10 @@
 
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth/session";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/infra/rate-limit";
 import * as itemService from "@/lib/services/item.service";
-import { suggestCategoryForItem } from "@/lib/brandfetch";
-import { toLocalDateKey } from "@/lib/date";
+import { suggestCategoryForItem } from "@/lib/domain/brandfetch";
+import { toLocalDateKey } from "@/lib/utils/date";
 import type { Item } from "@/lib/domain/types";
 
 // ── Validation schemas ───────────────────────────────────────────

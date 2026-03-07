@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
@@ -22,16 +22,15 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as DateCalendar } from "@/components/ui/calendar";
-import { CATEGORY_OPTIONS, ITEM_COLORS } from "@/lib/constants";
-import { toLocalDateKey } from "@/lib/date";
+import { CATEGORY_OPTIONS, ITEM_COLORS } from "@/lib/config/constants";
+import { toLocalDateKey } from "@/lib/utils/date";
 import {
   findRecognizedSubscriptionByName,
   getBrandfetchIconUrl,
-  searchRecognizedSubscriptions,
-  searchBnplSubscriptions,
-  suggestCategoryForItem,
-} from "@/lib/brandfetch";
+  type RecognizedSubscription,
+} from "@/lib/domain/brandfetch";
 import type { BillingCycle, Category, Item, ItemType } from "@/lib/domain/types";
+import { searchSubscriptions, suggestCategory } from "@/app/actions";
 import { Checkbox } from "@/components/animate-ui/components/headless/checkbox";
 import {
   Calendar as CalendarIcon,
@@ -45,7 +44,7 @@ import {
   LayoutGrid,
   MoonStar
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/cn";
 import { BrandIcon } from "@/components/dashboard/brand-icon";
 import { format } from "date-fns";
 
@@ -137,7 +136,7 @@ function toDraft(editItem: Item | null, prefill?: Partial<ItemDraft>): ItemDraft
     billingCycle: "monthly",
     billingDay: "1",
     startDate: todayDate(),
-    category: suggestCategoryForItem(seedName, seedType),
+    category: "other",
     color: ITEM_COLORS[0],
     notes: "",
     isShariah: false,
@@ -162,6 +161,11 @@ export function ItemForm({ open, onClose, onSave, editItem, prefill }: ItemFormP
     interestRate?: string;
   }>({});
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [nameSuggestions, setNameSuggestions] = useState<RecognizedSubscription[]>([]);
+  const [, startSearchTransition] = useTransition();
+  const [, startCategoryTransition] = useTransition();
+  const latestSearchIdRef = useRef(0);
+  const latestCategoryIdRef = useRef(0);
   const nameWrapperRef = useRef<HTMLDivElement>(null);
   const { type } = draft;
   const trimmedName = draft.name.trim();
@@ -170,6 +174,7 @@ export function ItemForm({ open, onClose, onSave, editItem, prefill }: ItemFormP
   useEffect(() => {
     if (!open) return;
     setDraft(toDraft(editItem, prefill));
+    setNameSuggestions([]);
     setErrors({});
   }, [editItem, open, prefill]);
 
@@ -189,11 +194,59 @@ export function ItemForm({ open, onClose, onSave, editItem, prefill }: ItemFormP
     return ["weekly", "monthly", "yearly"] as const;
   }, [type]);
 
-  const nameSuggestions = useMemo(() => {
-    if (!trimmedName) return [];
-    if (type === "bnpl") return searchBnplSubscriptions(trimmedName, 4);
-    return searchRecognizedSubscriptions(trimmedName, 6);
-  }, [type, trimmedName]);
+  useEffect(() => {
+    if (!open) return;
+    if (!showSuggestions || !trimmedName) {
+      setNameSuggestions([]);
+      return;
+    }
+
+    const searchId = latestSearchIdRef.current + 1;
+    latestSearchIdRef.current = searchId;
+    const timer = window.setTimeout(() => {
+      startSearchTransition(() => {
+        void searchSubscriptions(trimmedName, type)
+          .then((results) => {
+            if (latestSearchIdRef.current !== searchId) return;
+            setNameSuggestions(results);
+          })
+          .catch(() => {
+            if (latestSearchIdRef.current !== searchId) return;
+            setNameSuggestions([]);
+          });
+      });
+    }, 220);
+
+    return () => window.clearTimeout(timer);
+  }, [open, showSuggestions, trimmedName, type, startSearchTransition]);
+
+  useEffect(() => {
+    if (!open) return;
+    const name = draft.name.trim();
+    const itemType = draft.type;
+    if (!name) {
+      setDraft((prev) => (prev.category === "other" ? prev : { ...prev, category: "other" }));
+      return;
+    }
+
+    const categoryId = latestCategoryIdRef.current + 1;
+    latestCategoryIdRef.current = categoryId;
+    const timer = window.setTimeout(() => {
+      startCategoryTransition(() => {
+        void suggestCategory(name, itemType)
+          .then((category) => {
+            if (latestCategoryIdRef.current !== categoryId) return;
+            setDraft((prev) => {
+              if (prev.name.trim() !== name || prev.type !== itemType) return prev;
+              return { ...prev, category };
+            });
+          })
+          .catch(() => undefined);
+      });
+    }, 220);
+
+    return () => window.clearTimeout(timer);
+  }, [open, draft.name, draft.type, startCategoryTransition]);
 
   const billingDayError = useMemo(() => {
     const value = draft.billingDay.trim();
@@ -330,7 +383,6 @@ export function ItemForm({ open, onClose, onSave, editItem, prefill }: ItemFormP
                 return {
                   ...prev,
                   type: nextType,
-                  category: suggestCategoryForItem(prev.name, nextType),
                   ...(nextType === "bnpl"
                     ? { recognizedDomain: "", brandIconUrl: "" }
                     : {}),
@@ -372,7 +424,6 @@ export function ItemForm({ open, onClose, onSave, editItem, prefill }: ItemFormP
                           setDraft((prev) => ({
                             ...prev,
                             name: nextName,
-                            category: suggestCategoryForItem(nextName, prev.type),
                             recognizedDomain: "",
                             brandIconUrl: "",
                           }));
@@ -403,7 +454,6 @@ export function ItemForm({ open, onClose, onSave, editItem, prefill }: ItemFormP
                             setDraft((prev) => ({
                               ...prev,
                               name: subscription.name,
-                              category: suggestCategoryForItem(subscription.name, prev.type),
                               recognizedDomain: subscription.domain,
                               brandIconUrl: getBrandfetchIconUrl(subscription.domain),
                             }));

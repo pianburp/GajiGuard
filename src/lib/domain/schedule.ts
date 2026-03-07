@@ -1,5 +1,5 @@
 import type { Item, Occurrence, OccurrenceStatus } from "@/lib/domain/types";
-import { toLocalDateKey } from "@/lib/date";
+import { toLocalDateKey } from "@/lib/utils/date";
 
 function startOfDay(value: Date): Date {
   const d = new Date(value);

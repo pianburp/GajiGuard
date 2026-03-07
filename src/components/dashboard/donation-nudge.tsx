@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatRM } from "@/lib/format";
+import { formatRM } from "@/lib/utils/format";
 import { X } from "lucide-react";
 
 const STORAGE_KEY = "langgancheck-donation-nudge-dismissed";

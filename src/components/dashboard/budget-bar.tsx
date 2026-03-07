@@ -3,8 +3,8 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatRM } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { formatRM } from "@/lib/utils/format";
+import { cn } from "@/lib/utils/cn";
 import { Target, Pencil, X, Check, AlertTriangle } from "lucide-react";
 
 interface BudgetBarProps {

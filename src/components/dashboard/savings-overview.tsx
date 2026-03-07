@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { motion } from "motion/react";
 import { calculateAnnualSavings } from "@/lib/domain/item";
-import { formatRM } from "@/lib/format";
+import { formatRM } from "@/lib/utils/format";
 import type { Item } from "@/lib/domain/types";
 import { ChevronDown, ChevronUp, DollarSign } from "lucide-react";
 import { BrandIcon } from "@/components/dashboard/brand-icon";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { LayoutGroup, motion } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { BudgetBar } from "@/components/dashboard/budget-bar";
@@ -11,22 +11,21 @@ import { SmartCancelSuggestions } from "@/components/dashboard/smart-cancel-sugg
 import { SubscriptionHealthAudit } from "@/components/dashboard/subscription-health-audit";
 import { MonthlyReviewPrompt } from "@/components/dashboard/monthly-review-prompt";
 import { PersonalSummaryShareCard } from "@/components/dashboard/personal-summary-share-card";
-import {
-  buildMonthlySpendingHeatmap,
-  buildSubscriptionHealth,
-  buildSmartCancelSuggestions,
-  buildMonthlyAuditSummary,
-  finalizeAuditSummary,
-} from "@/lib/domain/insights";
 import type { Item, Occurrence } from "@/lib/domain/types";
+import type { DashboardData } from "@/lib/domain/dashboard";
 
 interface AnalyticsBentoProps {
   items: Item[];
   occurrences: Occurrence[];
   itemsById: Record<string, Item>;
   budget: number | null;
+  budgetStatus: DashboardData["budgetStatus"];
   onSetBudget: (amount: number | null) => void;
   monthDate: Date;
+  healthRows: DashboardData["healthRows"];
+  suggestions: DashboardData["suggestions"];
+  auditSummary: DashboardData["auditSummary"];
+  heatmap: DashboardData["heatmap"];
 }
 
 const PANEL_TRANSITION = {
@@ -41,23 +40,21 @@ export function AnalyticsBento({
   occurrences,
   itemsById,
   budget,
+  budgetStatus,
   onSetBudget,
   monthDate,
+  healthRows,
+  suggestions,
+  auditSummary,
+  heatmap,
 }: AnalyticsBentoProps) {
   const year = monthDate.getFullYear();
-  const heatmapMonths = useMemo(() => buildMonthlySpendingHeatmap(items, year), [items, year]);
-  const healthRows = useMemo(() => buildSubscriptionHealth(items, new Date()), [items]);
-  const suggestions = useMemo(() => buildSmartCancelSuggestions(healthRows), [healthRows]);
-  const summary = useMemo(
-    () => finalizeAuditSummary(buildMonthlyAuditSummary(healthRows)),
-    [healthRows],
-  );
 
   const [isSavingsOpen, setIsSavingsOpen] = useState(false);
 
   return (
     <div className="mt-8 space-y-6">
-      <MonthlyReviewPrompt inactiveCount={summary.inactiveCount} />
+      <MonthlyReviewPrompt inactiveCount={auditSummary.inactiveCount} />
 
       {/* Modern Bento Grid Layout */}
       <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 auto-rows-max gap-5">
@@ -65,7 +62,7 @@ export function AnalyticsBento({
         {/* Hero Top Left (Spans 8 cols) */}
         <div className="md:col-span-6 lg:col-span-8 flex flex-col">
           <div className="flex-1 rounded-xl">
-            <RecurringCostHeatmap year={year} months={heatmapMonths} />
+            <RecurringCostHeatmap year={year} months={heatmap} />
           </div>
         </div>
 
@@ -79,9 +76,7 @@ export function AnalyticsBento({
             <CardContent>
               <BudgetBar
                 budget={budget}
-                spent={occurrences
-                  .filter((occurrence) => occurrence.status !== "paid")
-                  .reduce((sum, occurrence) => sum + occurrence.amount, 0)}
+                spent={budgetStatus.spent}
                 onSetBudget={onSetBudget}
               />
             </CardContent>
@@ -91,7 +86,7 @@ export function AnalyticsBento({
         {/* Bottom Left Health Audit (Spans 5 cols) */}
         <div className="md:col-span-6 lg:col-span-5 flex flex-col">
           <div className="flex-1 rounded-xl">
-            <SubscriptionHealthAudit rows={healthRows} summary={summary} />
+            <SubscriptionHealthAudit rows={healthRows} summary={auditSummary} />
           </div>
         </div>
 

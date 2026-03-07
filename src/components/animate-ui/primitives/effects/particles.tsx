@@ -8,7 +8,7 @@ import {
   useIsInView,
   type UseIsInViewOptions,
 } from '@/hooks/use-is-in-view';
-import { getStrictContext } from '@/lib/get-strict-context';
+import { getStrictContext } from '@/lib/utils/get-strict-context';
 
 type Side = 'top' | 'bottom' | 'left' | 'right';
 type Align = 'start' | 'center' | 'end';

@@ -3,9 +3,9 @@
 import { useMemo } from "react";
 import { motion } from "motion/react";
 import { PieChart, Pie, Cell, Tooltip } from "recharts";
-import { CATEGORY_COLORS, CATEGORY_OPTIONS } from "@/lib/constants";
-import { formatRM } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { CATEGORY_COLORS, CATEGORY_OPTIONS } from "@/lib/config/constants";
+import { formatRM } from "@/lib/utils/format";
+import { cn } from "@/lib/utils/cn";
 import type { Item, Occurrence, Category } from "@/lib/domain/types";
 
 interface CategoryDonutProps {

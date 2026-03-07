@@ -8,7 +8,7 @@ import {
   RECOGNIZED_SUBSCRIPTIONS,
   BNPL_SUBSCRIPTIONS,
   getBrandfetchIconUrl,
-} from "@/lib/brandfetch";
+} from "@/lib/domain/brandfetch";
 
 interface EmptyStateProps {
   onQuickAdd: (template: Partial<ItemDraft>) => void;

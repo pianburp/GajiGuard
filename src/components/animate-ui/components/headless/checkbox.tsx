@@ -6,7 +6,7 @@ import {
   CheckboxIndicator as CheckboxIndicatorPrimitive,
   type CheckboxProps as CheckboxPrimitiveProps,
 } from '@/components/animate-ui/primitives/headless/checkbox';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/cn';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 const checkboxVariants = cva(
