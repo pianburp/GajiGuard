@@ -82,7 +82,7 @@ export function EmptyState({ onQuickAdd }: EmptyStateProps) {
   return (
     <Card className="border-dashed">
       <CardHeader className="flex flex-col items-center">
-        <CardTitle className="text-base">{"Mula track langanan first! \u{1F680}"}</CardTitle>
+        <CardTitle className="text-base">{"Start check subs dulu! \u{1F680}"}</CardTitle>
         <CardDescription>
           Pick a quick template to start in seconds, or add your own item manually.
         </CardDescription>
