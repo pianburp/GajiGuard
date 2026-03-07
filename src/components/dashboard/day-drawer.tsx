@@ -242,7 +242,7 @@ export function DayDrawer({
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-green-600" />
                   <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                    Potential Savings
+                    Jimat Berapa?
                   </p>
                 </div>
                 <p className="mt-1.5 text-sm text-green-700 dark:text-green-300">

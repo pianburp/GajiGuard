@@ -42,7 +42,8 @@ import {
   Tag,
   Hash,
   CalendarDays,
-  LayoutGrid
+  LayoutGrid,
+  MoonStar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BrandIcon } from "@/components/dashboard/brand-icon";
@@ -53,6 +54,7 @@ interface ItemFormProps {
   onClose: () => void;
   onSave: (item: Item) => void;
   editItem: Item | null;
+  prefill?: Partial<ItemDraft>;
 }
 
 function todayDate(): string {
@@ -81,7 +83,7 @@ function pickAutoColor(name: string, category: Category): string {
   return ITEM_COLORS[Math.abs(hash) % ITEM_COLORS.length] ?? ITEM_COLORS[0];
 }
 
-type ItemDraft = {
+export type ItemDraft = {
   type: ItemType;
   name: string;
   brandIconUrl: string;
@@ -99,32 +101,59 @@ type ItemDraft = {
   installmentsPaid: string;
 };
 
-function toDraft(editItem: Item | null): ItemDraft {
-  const recognized = findRecognizedSubscriptionByName(editItem?.name ?? "");
+function toDraft(editItem: Item | null, prefill?: Partial<ItemDraft>): ItemDraft {
+  if (editItem) {
+    const recognized = findRecognizedSubscriptionByName(editItem.name);
+    return {
+      type: editItem.type,
+      name: editItem.name,
+      brandIconUrl:
+        editItem.brandIconUrl ??
+        (recognized ? getBrandfetchIconUrl(recognized.domain) : ""),
+      recognizedDomain: recognized?.domain ?? "",
+      amount: String(editItem.amount),
+      billingCycle: editItem.billingCycle,
+      billingDay: String(editItem.billingDay),
+      startDate: editItem.startDate,
+      category: editItem.category,
+      color: editItem.color,
+      notes: editItem.notes,
+      isShariah: editItem.isShariah,
+      interestRate: String(editItem.interestRate ?? 0),
+      totalInstallments: String(editItem.totalInstallments ?? 6),
+      installmentsPaid: String(editItem.installmentsPaid ?? 0),
+    };
+  }
+
+  const seedName = prefill?.name ?? "";
+  const seedType = prefill?.type ?? "subscription";
+  const recognized = findRecognizedSubscriptionByName(seedName);
+  const defaults: ItemDraft = {
+    type: seedType,
+    name: seedName,
+    brandIconUrl: recognized ? getBrandfetchIconUrl(recognized.domain) : "",
+    recognizedDomain: recognized?.domain ?? "",
+    amount: "",
+    billingCycle: "monthly",
+    billingDay: "1",
+    startDate: todayDate(),
+    category: suggestCategoryForItem(seedName, seedType),
+    color: ITEM_COLORS[0],
+    notes: "",
+    isShariah: false,
+    interestRate: "0",
+    totalInstallments: "6",
+    installmentsPaid: "0",
+  };
 
   return {
-    type: editItem?.type ?? "subscription",
-    name: editItem?.name ?? "",
-    brandIconUrl:
-      editItem?.brandIconUrl ??
-      (recognized ? getBrandfetchIconUrl(recognized.domain) : ""),
-    recognizedDomain: recognized?.domain ?? "",
-    amount: String(editItem?.amount ?? ""),
-    billingCycle: editItem?.billingCycle ?? "monthly",
-    billingDay: String(editItem?.billingDay ?? 1),
-    startDate: editItem?.startDate ?? todayDate(),
-    category: editItem?.category ?? "other",
-    color: editItem?.color ?? ITEM_COLORS[0],
-    notes: editItem?.notes ?? "",
-    isShariah: editItem?.isShariah ?? false,
-    interestRate: String(editItem?.interestRate ?? 0),
-    totalInstallments: String(editItem?.totalInstallments ?? 6),
-    installmentsPaid: String(editItem?.installmentsPaid ?? 0),
+    ...defaults,
+    ...prefill,
   };
 }
 
-export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
-  const [draft, setDraft] = useState(() => toDraft(editItem));
+export function ItemForm({ open, onClose, onSave, editItem, prefill }: ItemFormProps) {
+  const [draft, setDraft] = useState(() => toDraft(editItem, prefill));
   const [errors, setErrors] = useState<{
     billingDay?: string;
     startDate?: string;
@@ -137,6 +166,12 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
   const { type } = draft;
   const trimmedName = draft.name.trim();
   const isEditing = Boolean(editItem);
+
+  useEffect(() => {
+    if (!open) return;
+    setDraft(toDraft(editItem, prefill));
+    setErrors({});
+  }, [editItem, open, prefill]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -583,7 +618,8 @@ export function ItemForm({ open, onClose, onSave, editItem }: ItemFormProps) {
                           }))
                         }
                       />
-                      <span className="text-sm font-medium text-emerald-600">Shariah-compliant</span>
+                      <MoonStar className="h-3 w-3 text-emerald-600" />
+                      <span className="text-xs font-medium text-emerald-600">Shariah-compliant</span>
                     </label>
                   </div>
                 </div>

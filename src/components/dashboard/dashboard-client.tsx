@@ -5,44 +5,53 @@ import { authClient } from "@/lib/auth/auth-client";
 import { CalendarView } from "@/components/dashboard/calendar-view";
 import { DayDrawer } from "@/components/dashboard/day-drawer";
 import { ItemForm } from "@/components/dashboard/item-form";
+import type { ItemDraft } from "@/components/dashboard/item-form";
 import { UpcomingSidebar } from "@/components/dashboard/upcoming-sidebar";
 import { AnalyticsBento } from "@/components/dashboard/analytics-bento";
 import { DonationNudge } from "@/components/dashboard/donation-nudge";
+import { EmptyState } from "@/components/dashboard/empty-state";
+import { GajiCountdown } from "@/components/dashboard/gaji-countdown";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { getOccurrencesForMonth } from "@/lib/domain/schedule";
-import { upsertItem, markItemPaid, deleteItem, setBudget } from "@/app/actions";
+import {
+  upsertItem,
+  markItemPaid,
+  deleteItem,
+  setBudget,
+  setGajiDay as setGajiDayAction,
+} from "@/app/actions";
 import { formatRM } from "@/lib/format";
 
 import type { Item } from "@/lib/domain/types";
-import {
-  Plus,
-  CalendarFold,
-  AlertTriangle,
-  X,
-} from "lucide-react";
+import { Plus, CalendarFold, AlertTriangle, X } from "lucide-react";
 
 interface DashboardClientProps {
   isAuthenticated: boolean;
   initialItems?: Item[];
   initialBudget?: number | null;
+  initialGajiDay?: number;
 }
 
 export function DashboardClient({
   isAuthenticated,
   initialItems = [],
   initialBudget = null,
+  initialGajiDay = 25,
 }: DashboardClientProps) {
   const [items, setItems] = useState<Item[]>(initialItems);
   const [budget, setBudgetState] = useState<number | null>(initialBudget);
+  const [gajiDay, setGajiDayState] = useState<number>(initialGajiDay);
   const [monthDate, setMonthDate] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Item | null>(null);
+  const [formPrefill, setFormPrefill] = useState<Partial<ItemDraft> | undefined>(
+    undefined,
+  );
   const [formNonce, setFormNonce] = useState(0);
   const [overdueDismissed, setOverdueDismissed] = useState(false);
-
 
   const occurrences = useMemo(
     () =>
@@ -111,9 +120,24 @@ export function DashboardClient({
       return;
     }
     setEditItem(null);
+    setFormPrefill(undefined);
     setFormNonce((n) => n + 1);
     setFormOpen(true);
   }, [isAuthenticated]);
+
+  const onQuickAdd = useCallback(
+    (template: Partial<ItemDraft>) => {
+      if (!isAuthenticated) {
+        signInWithGoogle();
+        return;
+      }
+      setEditItem(null);
+      setFormPrefill(template);
+      setFormNonce((n) => n + 1);
+      setFormOpen(true);
+    },
+    [isAuthenticated],
+  );
 
   const onSetBudget = useCallback(
     async (amount: number | null) => {
@@ -132,6 +156,23 @@ export function DashboardClient({
     [isAuthenticated, budget],
   );
 
+  const onSetGajiDay = useCallback(
+    async (day: number) => {
+      if (!isAuthenticated) {
+        signInWithGoogle();
+        return;
+      }
+      const prev = gajiDay;
+      setGajiDayState(day);
+      try {
+        await setGajiDayAction(day);
+      } catch {
+        setGajiDayState(prev);
+      }
+    },
+    [gajiDay, isAuthenticated],
+  );
+
   const onSave = useCallback(
     async (item: Item) => {
       if (!isAuthenticated) {
@@ -141,8 +182,8 @@ export function DashboardClient({
       const exists = items.some((candidate) => candidate.id === item.id);
       const next = exists
         ? items.map((candidate) =>
-          candidate.id === item.id ? item : candidate,
-        )
+            candidate.id === item.id ? item : candidate,
+          )
         : [...items, item];
       setItems(next);
 
@@ -162,7 +203,6 @@ export function DashboardClient({
         return;
       }
 
-      // Optimistic update
       const next = items.map((item) => {
         if (item.id !== itemId) return item;
         if (item.type === "bnpl") {
@@ -200,7 +240,6 @@ export function DashboardClient({
         return;
       }
 
-      // Optimistic removal
       const prev = items;
       setItems((current) => current.filter((item) => item.id !== itemId));
       setSelectedDate(null);
@@ -217,7 +256,6 @@ export function DashboardClient({
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -227,7 +265,9 @@ export function DashboardClient({
           <p className="mt-1 text-sm text-muted-foreground">
             {isAuthenticated ? (
               <span className="flex items-center gap-2">
-                <span>{items.length} {items.length === 1 ? "item" : "items"}</span>
+                <span>
+                  {items.length} {items.length === 1 ? "item" : "items"}
+                </span>
               </span>
             ) : (
               "Guest preview mode"
@@ -242,7 +282,6 @@ export function DashboardClient({
         </div>
       </div>
 
-      {/* Overdue Alert Banner */}
       {isAuthenticated && overdueInfo.count > 0 && !overdueDismissed && (
         <Alert variant="destructive" className="mb-6">
           <div className="flex items-center justify-between">
@@ -266,47 +305,55 @@ export function DashboardClient({
         </Alert>
       )}
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_300px]">
-        <CalendarView
-          monthDate={monthDate}
-          selectedDate={selectedDate}
-          occurrences={occurrences}
-          itemsById={itemsById}
-          onMonthChange={setMonthDate}
-          onSelectDate={(date) => setSelectedDate(date)}
-        />
-        <UpcomingSidebar
-          monthlyTotal={monthlyTotal}
-          previousMonthTotal={previousMonthTotal}
-          occurrences={occurrences}
-          itemsById={itemsById}
-        />
-      </div>
-      <AnalyticsBento
-        items={items}
-        occurrences={occurrences}
-        itemsById={itemsById}
-        budget={budget}
-        onSetBudget={onSetBudget}
-        monthDate={monthDate}
-      />
+      {items.length === 0 ? (
+        <EmptyState onQuickAdd={onQuickAdd} />
+      ) : (
+        <>
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_300px]">
+            <CalendarView
+              monthDate={monthDate}
+              selectedDate={selectedDate}
+              occurrences={occurrences}
+              itemsById={itemsById}
+              onMonthChange={setMonthDate}
+              onSelectDate={(date) => setSelectedDate(date)}
+              onMarkPaid={onMarkPaid}
+            />
+            <div className="space-y-4">
+              <GajiCountdown gajiDay={gajiDay} onSetGajiDay={onSetGajiDay} />
+              <UpcomingSidebar
+                monthlyTotal={monthlyTotal}
+                previousMonthTotal={previousMonthTotal}
+                occurrences={occurrences}
+                itemsById={itemsById}
+              />
+            </div>
+          </div>
+          <AnalyticsBento
+            items={items}
+            occurrences={occurrences}
+            itemsById={itemsById}
+            budget={budget}
+            onSetBudget={onSetBudget}
+            monthDate={monthDate}
+          />
 
-      {/* Donation nudge — shown after user has tracked a few items */}
-      {isAuthenticated && (
-        <DonationNudge
-          itemCount={items.length}
-          totalMonthlyCost={fullMonthlyTotal}
-        />
+          {isAuthenticated && (
+            <DonationNudge
+              itemCount={items.length}
+              totalMonthlyCost={fullMonthlyTotal}
+            />
+          )}
+        </>
       )}
 
-      {/* Modals */}
       <ItemForm
         key={`${editItem?.id ?? "new"}-${formNonce}`}
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSave={onSave}
         editItem={editItem}
+        prefill={formPrefill}
       />
       <DayDrawer
         open={Boolean(selectedDate)}
@@ -321,6 +368,7 @@ export function DashboardClient({
             return;
           }
           setEditItem(item);
+          setFormPrefill(undefined);
           setFormNonce((n) => n + 1);
           setFormOpen(true);
         }}

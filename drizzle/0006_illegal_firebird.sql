@@ -1,0 +1,1 @@
+ALTER TABLE "user" ADD COLUMN "gaji_day" integer DEFAULT 25;

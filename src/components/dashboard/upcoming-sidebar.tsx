@@ -1,10 +1,22 @@
+"use client";
+
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { formatRM, formatRelativeDate, formatShortDate } from "@/lib/format";
 import type { Item, Occurrence } from "@/lib/domain/types";
-import { Wallet, Clock, CreditCard, Package, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  Wallet,
+  Clock,
+  CreditCard,
+  Package,
+  TrendingUp,
+  TrendingDown,
+  Clipboard,
+  Check,
+} from "lucide-react";
 import { BrandIcon } from "@/components/dashboard/brand-icon";
 import { CATEGORY_OPTIONS } from "@/lib/constants";
 
@@ -21,6 +33,7 @@ export function UpcomingSidebar({
   occurrences,
   itemsById,
 }: UpcomingSidebarProps) {
+  const [copied, setCopied] = useState(false);
   const categoryLabelByValue = Object.fromEntries(
     CATEGORY_OPTIONS.map((option) => [option.value, option.label]),
   ) as Record<Item["category"], string>;
@@ -73,9 +86,23 @@ export function UpcomingSidebar({
                   );
                 })()}
               </div>
-              <p className="text-2xl font-semibold tabular-nums tracking-tight">
-                {formatRM(monthlyTotal)}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-2xl font-semibold tabular-nums tracking-tight">
+                  {formatRM(monthlyTotal)}
+                </p>
+                <button
+                  type="button"
+                  aria-label="Copy total"
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(formatRM(monthlyTotal));
+                    setCopied(true);
+                    window.setTimeout(() => setCopied(false), 2000);
+                  }}
+                >
+                  {copied ? <Check className="h-3.5 w-3.5" /> : <Clipboard className="h-3.5 w-3.5" />}
+                </button>
+              </div>
             </div>
           </div>
           {totalPaid > 0 && (

@@ -43,6 +43,13 @@
       "when": 1772458601746,
       "tag": "0005_eminent_plazm",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1772806560530,
+      "tag": "0006_illegal_firebird",
+      "breakpoints": true
     }
   ]
 }
