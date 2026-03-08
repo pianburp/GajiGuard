@@ -714,11 +714,11 @@ async function drawIllustration(
 ): Promise<void> {
   try {
     const filePath = path.join(process.cwd(), "public", url.replace(/^\//, ""));
-    const svgBuffer = readFileSync(filePath);
-    const img = await loadImage(svgBuffer);
+    const imgBuffer = readFileSync(filePath);
+    const img = await loadImage(imgBuffer);
     ctx.drawImage(img as unknown as CanvasImageSource, x, y, width, height);
-  } catch {
-    // Keep rendering even if an optional illustration fails.
+  } catch (err) {
+    console.warn("[share-image] illustration load failed:", url, err);
   }
 }
 
@@ -828,7 +828,7 @@ export function getLocalizedInsight(yearlyProjection: number): InsightData {
         `That's ${nasiLemak.toLocaleString()} NASI LEMAK`,
         `Could've eaten nasi lemak every day for ${years} years.`,
       ],
-      illustrationUrl: "/nasi-lemak.svg",
+      illustrationUrl: "/nasi-lemak.png",
       illustrationSize: {
         width: 470,
         height: 370,
@@ -844,7 +844,7 @@ export function getLocalizedInsight(yearlyProjection: number): InsightData {
         `That's ${nasiKerabu.toLocaleString()} NASI KERABU`,
         `Could've eaten nasi kerabu every day for ${months} months.`,
       ],
-      illustrationUrl: "/nasi-kerabu.svg",
+      illustrationUrl: "/nasi-kerabu.png",
       illustrationSize: {
         width: 430,
         height: 340,
@@ -860,7 +860,7 @@ export function getLocalizedInsight(yearlyProjection: number): InsightData {
         `That's ${ayamGoreng.toLocaleString()} AYAM GORENG`,
         `Could've eaten ayam goreng every day for ${weeks} weeks.`,
       ],
-      illustrationUrl: "/ayam-goreng.svg",
+      illustrationUrl: "/ayam-goreng.png",
       illustrationSize: {
         width: 390,
         height: 320,
@@ -876,7 +876,7 @@ export function getLocalizedInsight(yearlyProjection: number): InsightData {
         `That's ${tehTarik.toLocaleString()} TEH TARIK`,
         `Could've drank teh tarik every day for ${weeks} weeks.`,
       ],
-      illustrationUrl: "/teh-tarik.svg",
+      illustrationUrl: "/teh-tarik.png",
       illustrationSize: {
         width: 250,
         height: 280,
@@ -889,7 +889,7 @@ export function getLocalizedInsight(yearlyProjection: number): InsightData {
       "NO DAMAGE YET",
       "Add your subscriptions to see the damage.",
     ],
-    illustrationUrl: "/nasi-lemak.svg",
+    illustrationUrl: "/nasi-lemak.png",
     illustrationSize: {
       width: 420,
       height: 330,
@@ -944,7 +944,7 @@ export async function renderStoryCard(
 
   await drawIllustration(
     ctx,
-    insight.illustrationUrl || "/nasi-lemak.svg",
+    insight.illustrationUrl || "/nasi-lemak.png",
     illustrationX,
     illustrationY,
     illustrationWidth,
