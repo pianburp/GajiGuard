@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { formatRM, formatRelativeDate, formatShortDate } from "@/lib/utils/format";
-import type { Item, Occurrence } from "@/lib/domain/types";
+import type { Item, Occurrence } from "@/domain/types";
 import {
   Wallet,
   Clock,
@@ -22,6 +22,8 @@ interface UpcomingSidebarProps {
   previousMonthTotal: number;
   occurrences: Occurrence[];
   itemsById: Record<string, Item>;
+  categoryFilterLabel?: string | null;
+  onClearCategoryFilter?: () => void;
 }
 
 export function UpcomingSidebar({
@@ -29,6 +31,8 @@ export function UpcomingSidebar({
   previousMonthTotal,
   occurrences,
   itemsById,
+  categoryFilterLabel,
+  onClearCategoryFilter,
 }: UpcomingSidebarProps) {
   const categoryLabelByValue = Object.fromEntries(
     CATEGORY_OPTIONS.map((option) => [option.value, option.label]),
@@ -177,6 +181,22 @@ export function UpcomingSidebar({
             <CardTitle className="text-sm font-semibold">Upcoming</CardTitle>
           </div>
           <CardDescription className="text-xs">Next 10 payments due</CardDescription>
+          {categoryFilterLabel && (
+            <div className="mt-1 flex items-center justify-between rounded-md border bg-muted/50 px-2 py-1 text-[11px]">
+              <span className="text-muted-foreground">
+                Filtered by <span className="font-medium text-foreground">{categoryFilterLabel}</span>
+              </span>
+              {onClearCategoryFilter && (
+                <button
+                  type="button"
+                  onClick={onClearCategoryFilter}
+                  className="text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
         </CardHeader>
         <CardContent className="p-0">
           {upcoming.length === 0 ? (

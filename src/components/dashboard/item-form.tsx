@@ -28,9 +28,9 @@ import {
   findRecognizedSubscriptionByName,
   getBrandfetchIconUrl,
   type RecognizedSubscription,
-} from "@/lib/domain/brandfetch";
-import type { BillingCycle, Category, Item, ItemType } from "@/lib/domain/types";
-import { searchSubscriptions, suggestCategory } from "@/app/actions";
+} from "@/domain/brandfetch";
+import type { BillingCycle, Category, Item, ItemType } from "@/domain/types";
+import { searchSubscriptions, suggestCategory } from "@/actions";
 import { Checkbox } from "@/components/animate-ui/components/headless/checkbox";
 import {
   Calendar as CalendarIcon,
@@ -511,7 +511,7 @@ export function ItemForm({ open, onClose, onSave, editItem, prefill }: ItemFormP
                       onChange={(e) => setDraft((prev) => ({ ...prev, amount: e.target.value }))}
                       placeholder="0.00"
                       className="pl-8 bg-muted/50 focus-visible:bg-background transition-colors h-10"
-                   />
+                    />
                   </div>
                   {type === "bnpl" && (
                     <p className="text-[10px] text-muted-foreground leading-tight">Total purchase amount</p>

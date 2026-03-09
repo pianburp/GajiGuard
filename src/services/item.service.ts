@@ -3,8 +3,8 @@ import {
   toItem,
   markBnplPaid,
   markSubscriptionPaid,
-} from "@/lib/domain/item";
-import type { Item } from "@/lib/domain/types";
+} from "@/domain/item";
+import type { Item } from "@/domain/types";
 
 /** Get all items for a user, mapped to domain types. */
 export async function getItemsByUserId(userId: string): Promise<Item[]> {

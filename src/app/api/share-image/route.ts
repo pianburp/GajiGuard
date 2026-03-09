@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth/session";
 import { rateLimit } from "@/lib/infra/rate-limit";
-import { getOccurrencesForMonth } from "@/lib/domain/schedule";
-import { getItemsByUserId } from "@/lib/services/item.service";
+import { getOccurrencesForMonth } from "@/domain/schedule";
+import { getItemsByUserId } from "@/services/item.service";
 import { renderStoryCard } from "@/lib/share/share-image-renderer";
 import { computeSummaryStats, toMonthLabel } from "@/lib/share/share-image-summary";
 

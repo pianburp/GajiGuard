@@ -5,10 +5,10 @@ import {
   searchBnplSubscriptions,
   searchRecognizedSubscriptions,
   suggestCategoryForItem,
-} from "@/lib/domain/brandfetch";
+} from "@/domain/brandfetch";
 import { requireAuth } from "@/lib/auth/session";
 import { rateLimit } from "@/lib/infra/rate-limit";
-import type { Category, ItemType } from "@/lib/domain/types";
+import type { Category, ItemType } from "@/domain/types";
 
 const querySchema = z
   .string()

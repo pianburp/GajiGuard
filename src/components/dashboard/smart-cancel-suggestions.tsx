@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatRM } from "@/lib/utils/format";
-import type { CancelSuggestion } from "@/lib/domain/insights";
+import type { CancelSuggestion } from "@/domain/insights";
 
 interface SmartCancelSuggestionsProps {
   suggestions: CancelSuggestion[];

@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { toLocalDateKey } from "@/lib/utils/date";
-import type { Item, Occurrence } from "@/lib/domain/types";
+import type { Item, Occurrence } from "@/domain/types";
 import { BrandIcon } from "@/components/dashboard/brand-icon";
 import { Button } from "@/components/ui/button";
 
@@ -211,7 +211,7 @@ export function CalendarView({
                 isLastCol && "border-r-0",
                 isLastRow && "border-b-0",
                 isSelected &&
-                  "bg-[#fff5f5] hover:bg-[#fff0f0] dark:bg-[#3a1c1a] dark:hover:bg-[#4a2321]",
+                "bg-[#fff5f5] hover:bg-[#fff0f0] dark:bg-[#3a1c1a] dark:hover:bg-[#4a2321]",
                 isFirstRow && isFirstCol && "rounded-tl-xl",
                 isFirstRow && isLastCol && "rounded-tr-xl",
                 isLastRow && isFirstCol && "rounded-bl-xl",
@@ -225,7 +225,7 @@ export function CalendarView({
                   inMonth && isWeekend && !isToday && "text-gray-500 dark:text-zinc-400",
                   inMonth && !isWeekend && !isToday && "text-gray-900 dark:text-zinc-100",
                   isToday &&
-                    "rounded-full bg-[#ff3b30] font-medium text-white shadow-sm shadow-[#ff3b30]/30",
+                  "rounded-full bg-[#ff3b30] font-medium text-white shadow-sm shadow-[#ff3b30]/30",
                   isSelected && !isToday && inMonth && "text-gray-900 dark:text-zinc-100",
                 )}
               >

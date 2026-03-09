@@ -20,10 +20,12 @@ import {
   setBudget,
   setGajiDay as setGajiDayAction,
   upsertItem,
-} from "@/app/actions";
+} from "@/actions";
 import { formatRM } from "@/lib/utils/format";
-import type { DashboardData } from "@/lib/domain/dashboard";
-import type { Item } from "@/lib/domain/types";
+import type { DashboardData } from "@/domain/dashboard";
+import type { Category, Item } from "@/domain/types";
+import { getOccurrencesForMonth, getOccurrencesInRange } from "@/domain/schedule";
+import { CATEGORY_OPTIONS } from "@/lib/config/constants";
 import { Plus, CalendarFold, AlertTriangle, X } from "lucide-react";
 
 interface DashboardClientProps {
@@ -67,6 +69,7 @@ export function DashboardClient({
   const [gajiDay, setGajiDayState] = useState<number>(initialDashboardData?.gajiDay ?? 25);
   const [monthDate, setMonthDate] = useState(() => new Date(initialYear, initialMonth, 1));
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [formPrefill, setFormPrefill] = useState<Partial<ItemDraft> | undefined>(undefined);
@@ -77,9 +80,17 @@ export function DashboardClient({
 
   const itemsById = Object.fromEntries(items.map((item) => [item.id, item]));
 
+  const filteredOccurrences = useMemo(() => {
+    if (!selectedCategory) return occurrences;
+    return occurrences.filter((occurrence) => {
+      const item = itemsById[occurrence.itemId];
+      return item?.category === selectedCategory;
+    });
+  }, [itemsById, occurrences, selectedCategory]);
+
   const dayOccurrences = useMemo(
-    () => occurrences.filter((o) => o.date === selectedDate),
-    [occurrences, selectedDate],
+    () => filteredOccurrences.filter((o) => o.date === selectedDate),
+    [filteredOccurrences, selectedDate],
   );
 
   const fullMonthlyTotal = useMemo(
@@ -94,6 +105,67 @@ export function DashboardClient({
       total: missed.reduce((acc, curr) => acc + curr.amount, 0),
     };
   }, [occurrences]);
+
+  const budgetHistory = useMemo(() => {
+    return Array.from({ length: 6 }, (_, index) => {
+      const monthOffset = 5 - index;
+      const date = new Date(monthDate.getFullYear(), monthDate.getMonth() - monthOffset, 1);
+      const monthOccurrences = getOccurrencesForMonth(items, date.getFullYear(), date.getMonth());
+      const spent = monthOccurrences
+        .filter((occurrence) => occurrence.status !== "paid")
+        .reduce((sum, occurrence) => sum + occurrence.amount, 0);
+      return {
+        monthKey: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`,
+        monthLabel: date.toLocaleDateString(undefined, { month: "short" }),
+        spent,
+      };
+    });
+  }, [items, monthDate]);
+
+  const previousMonthOccurrences = useMemo(() => {
+    const previousMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() - 1, 1);
+    return getOccurrencesForMonth(items, previousMonth.getFullYear(), previousMonth.getMonth());
+  }, [items, monthDate]);
+
+  const billsBeforePayday = useMemo(() => {
+    const normalizeDate = (value: Date) => {
+      const d = new Date(value);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    };
+    const buildPayday = (year: number, month: number, day: number) => {
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      return new Date(year, month, Math.min(day, lastDay));
+    };
+
+    const today = normalizeDate(new Date());
+    const currentPayday = normalizeDate(buildPayday(today.getFullYear(), today.getMonth(), gajiDay));
+    const targetPayday =
+      currentPayday >= today
+        ? currentPayday
+        : normalizeDate(buildPayday(today.getFullYear(), today.getMonth() + 1, gajiDay));
+
+    if (targetPayday.getTime() === today.getTime()) {
+      return { count: 0, total: 0 };
+    }
+
+    const dayBeforePayday = new Date(targetPayday);
+    dayBeforePayday.setDate(dayBeforePayday.getDate() - 1);
+    const dueBeforePayday = getOccurrencesInRange(items, today, dayBeforePayday)
+      .filter((occurrence) => occurrence.status !== "paid");
+
+    return {
+      count: dueBeforePayday.length,
+      total: dueBeforePayday.reduce((sum, occurrence) => sum + occurrence.amount, 0),
+    };
+  }, [gajiDay, items]);
+
+  const selectedCategoryLabel = useMemo(() => {
+    if (!selectedCategory) return null;
+    return (
+      CATEGORY_OPTIONS.find((option) => option.value === selectedCategory)?.label ?? selectedCategory
+    );
+  }, [selectedCategory]);
 
   const signInWithGoogle = () => {
     authClient.signIn.social({
@@ -221,8 +293,8 @@ export function DashboardClient({
       const exists = items.some((candidate) => candidate.id === item.id);
       const next = exists
         ? items.map((candidate) =>
-            candidate.id === item.id ? item : candidate,
-          )
+          candidate.id === item.id ? item : candidate,
+        )
         : [...items, item];
       setItems(next);
 
@@ -358,19 +430,25 @@ export function DashboardClient({
             <CalendarView
               monthDate={monthDate}
               selectedDate={selectedDate}
-              occurrences={occurrences}
+              occurrences={filteredOccurrences}
               itemsById={itemsById}
               onMonthChange={loadDashboardMonth}
               onSelectDate={(date) => setSelectedDate(date)}
               onMarkPaid={onMarkPaid}
             />
             <div className="space-y-4">
-              <GajiCountdown gajiDay={gajiDay} onSetGajiDay={onSetGajiDay} />
+              <GajiCountdown
+                gajiDay={gajiDay}
+                onSetGajiDay={onSetGajiDay}
+                billsBeforePayday={billsBeforePayday}
+              />
               <UpcomingSidebar
                 monthlyTotal={monthlyTotal}
                 previousMonthTotal={previousMonthTotal}
-                occurrences={occurrences}
+                occurrences={filteredOccurrences}
                 itemsById={itemsById}
+                categoryFilterLabel={selectedCategoryLabel}
+                onClearCategoryFilter={() => setSelectedCategory(null)}
               />
             </div>
           </div>
@@ -382,6 +460,10 @@ export function DashboardClient({
             budgetStatus={budgetStatus}
             onSetBudget={onSetBudget}
             monthDate={monthDate}
+            budgetHistory={budgetHistory}
+            previousMonthOccurrences={previousMonthOccurrences}
+            categoryFilter={selectedCategory}
+            onCategoryFilterChange={setSelectedCategory}
             healthRows={healthRows}
             suggestions={suggestions}
             auditSummary={auditSummary}

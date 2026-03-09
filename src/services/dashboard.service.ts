@@ -4,10 +4,10 @@ import {
   buildSmartCancelSuggestions,
   buildSubscriptionHealth,
   finalizeAuditSummary,
-} from "@/lib/domain/insights";
-import { getOccurrencesForMonth } from "@/lib/domain/schedule";
-import type { BudgetStatus, DashboardData } from "@/lib/domain/dashboard";
-import type { Occurrence } from "@/lib/domain/types";
+} from "@/domain/insights";
+import { getOccurrencesForMonth } from "@/domain/schedule";
+import type { BudgetStatus, DashboardData } from "@/domain/dashboard";
+import type { Occurrence } from "@/domain/types";
 import * as userRepo from "@/lib/repositories/user.repository";
 import { getItemsByUserId } from "@/lib/services/item.service";
 

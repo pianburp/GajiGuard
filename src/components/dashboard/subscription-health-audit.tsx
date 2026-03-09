@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatRM } from "@/lib/utils/format";
-import type { AuditSummary, SubscriptionHealthRow, SubscriptionHealthStatus } from "@/lib/domain/insights";
+import type { AuditSummary, SubscriptionHealthRow, SubscriptionHealthStatus } from "@/domain/insights";
 
 interface SubscriptionHealthAuditProps {
   rows: SubscriptionHealthRow[];

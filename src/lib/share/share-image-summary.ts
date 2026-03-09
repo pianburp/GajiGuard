@@ -1,4 +1,4 @@
-import type { Category, Item, Occurrence } from "@/lib/domain/types";
+import type { Category, Item, Occurrence } from "@/domain/types";
 
 export interface TopSubscription {
   name: string;

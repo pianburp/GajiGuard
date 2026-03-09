@@ -11,16 +11,24 @@ import { SmartCancelSuggestions } from "@/components/dashboard/smart-cancel-sugg
 import { SubscriptionHealthAudit } from "@/components/dashboard/subscription-health-audit";
 import { MonthlyReviewPrompt } from "@/components/dashboard/monthly-review-prompt";
 import { PersonalSummaryShareCard } from "@/components/dashboard/personal-summary-share-card";
-import type { Item, Occurrence } from "@/lib/domain/types";
-import type { DashboardData } from "@/lib/domain/dashboard";
+import type { Category, Item, Occurrence } from "@/domain/types";
+import type { DashboardData } from "@/domain/dashboard";
 
 interface AnalyticsBentoProps {
   items: Item[];
   occurrences: Occurrence[];
+  previousMonthOccurrences: Occurrence[];
   itemsById: Record<string, Item>;
   budget: number | null;
   budgetStatus: DashboardData["budgetStatus"];
+  budgetHistory: Array<{
+    monthKey: string;
+    monthLabel: string;
+    spent: number;
+  }>;
   onSetBudget: (amount: number | null) => void;
+  categoryFilter: Category | null;
+  onCategoryFilterChange: (category: Category | null) => void;
   monthDate: Date;
   healthRows: DashboardData["healthRows"];
   suggestions: DashboardData["suggestions"];
@@ -38,10 +46,14 @@ const PANEL_TRANSITION = {
 export function AnalyticsBento({
   items,
   occurrences,
+  previousMonthOccurrences,
   itemsById,
   budget,
   budgetStatus,
+  budgetHistory,
   onSetBudget,
+  categoryFilter,
+  onCategoryFilterChange,
   monthDate,
   healthRows,
   suggestions,
@@ -77,6 +89,7 @@ export function AnalyticsBento({
               <BudgetBar
                 budget={budget}
                 spent={budgetStatus.spent}
+                history={budgetHistory}
                 onSetBudget={onSetBudget}
               />
             </CardContent>
@@ -118,7 +131,14 @@ export function AnalyticsBento({
                   transition={PANEL_TRANSITION}
                   className="flex flex-1 flex-col justify-between space-y-6"
                 >
-                  <CategoryDonut occurrences={occurrences} itemsById={itemsById} isCompact={isSavingsOpen} />
+                  <CategoryDonut
+                    occurrences={occurrences}
+                    previousMonthOccurrences={previousMonthOccurrences}
+                    itemsById={itemsById}
+                    selectedCategory={categoryFilter}
+                    onCategorySelect={onCategoryFilterChange}
+                    isCompact={isSavingsOpen}
+                  />
                   <SavingsOverview items={items} isExpanded={isSavingsOpen} onExpandedChange={setIsSavingsOpen} />
                 </motion.div>
               </LayoutGroup>

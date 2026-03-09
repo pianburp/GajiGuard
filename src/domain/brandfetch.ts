@@ -1,4 +1,4 @@
-import type { Category, ItemType } from "@/lib/domain/types";
+import type { Category, ItemType } from "@/domain/types";
 
 export type RecognizedSubscription = {
   name: string;

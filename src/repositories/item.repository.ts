@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { item as itemTable } from "@/lib/db/schema";
-import type { Item } from "@/lib/domain/types";
+import type { Item } from "@/domain/types";
 
 /** Find all items belonging to a user. */
 export async function findByUserId(userId: string) {

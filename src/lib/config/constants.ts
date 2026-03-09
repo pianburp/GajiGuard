@@ -1,4 +1,4 @@
-import type { BillingCycle, Category } from "@/lib/domain/types";
+import type { BillingCycle, Category } from "@/domain/types";
 
 export const CATEGORY_OPTIONS: { value: Category; label: string }[] = [
   { value: "entertainment", label: "Entertainment" },

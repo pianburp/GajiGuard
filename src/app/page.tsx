@@ -1,6 +1,6 @@
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { getSession } from "@/lib/auth/session";
-import { getDashboardData } from "@/app/actions";
+import { getDashboardData } from "@/actions";
 
 export default async function Home() {
   const session = await getSession();

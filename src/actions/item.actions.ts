@@ -4,9 +4,9 @@ import { z } from "zod";
 import { requireAuth } from "@/lib/auth/session";
 import { rateLimit } from "@/lib/infra/rate-limit";
 import * as itemService from "@/lib/services/item.service";
-import { suggestCategoryForItem } from "@/lib/domain/brandfetch";
+import { suggestCategoryForItem } from "@/domain/brandfetch";
 import { toLocalDateKey } from "@/lib/utils/date";
-import type { Item } from "@/lib/domain/types";
+import type { Item } from "@/domain/types";
 
 // ── Validation schemas ───────────────────────────────────────────
 

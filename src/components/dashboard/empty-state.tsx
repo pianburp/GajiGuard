@@ -8,7 +8,7 @@ import {
   RECOGNIZED_SUBSCRIPTIONS,
   BNPL_SUBSCRIPTIONS,
   getBrandfetchIconUrl,
-} from "@/lib/domain/brandfetch";
+} from "@/domain/brandfetch";
 
 interface EmptyStateProps {
   onQuickAdd: (template: Partial<ItemDraft>) => void;
@@ -19,52 +19,52 @@ const QUICK_ADD_TEMPLATES: Array<{
   template: Partial<ItemDraft>;
   iconName?: string;
 }> = [
-  {
-    label: "Spotify",
-    iconName: "Spotify",
-    template: {
-      type: "subscription",
-      name: "Spotify",
-      amount: "15.90",
-      billingCycle: "monthly",
-      category: "entertainment",
+    {
+      label: "Spotify",
+      iconName: "Spotify",
+      template: {
+        type: "subscription",
+        name: "Spotify",
+        amount: "15.90",
+        billingCycle: "monthly",
+        category: "entertainment",
+      },
     },
-  },
-  {
-    label: "Netflix",
-    iconName: "Netflix",
-    template: {
-      type: "subscription",
-      name: "Netflix",
-      amount: "55.00",
-      billingCycle: "monthly",
-      category: "entertainment",
+    {
+      label: "Netflix",
+      iconName: "Netflix",
+      template: {
+        type: "subscription",
+        name: "Netflix",
+        amount: "55.00",
+        billingCycle: "monthly",
+        category: "entertainment",
+      },
     },
-  },
-  {
-    label: "YouTube Premium",
-    iconName: "YouTube Music",
-    template: {
-      type: "subscription",
-      name: "YouTube Premium",
-      amount: "17.90",
-      billingCycle: "monthly",
-      category: "entertainment",
+    {
+      label: "YouTube Premium",
+      iconName: "YouTube Music",
+      template: {
+        type: "subscription",
+        name: "YouTube Premium",
+        amount: "17.90",
+        billingCycle: "monthly",
+        category: "entertainment",
+      },
     },
-  },
-  {
-    label: "Shopee PayLater",
-    iconName: "SPayLater",
-    template: {
-      type: "bnpl",
-      name: "Shopee PayLater",
-      amount: "300.00",
-      billingCycle: "monthly",
-      totalInstallments: "3",
-      category: "shopping",
+    {
+      label: "Shopee PayLater",
+      iconName: "SPayLater",
+      template: {
+        type: "bnpl",
+        name: "Shopee PayLater",
+        amount: "300.00",
+        billingCycle: "monthly",
+        totalInstallments: "3",
+        category: "shopping",
+      },
     },
-  },
-];
+  ];
 
 export function EmptyState({ onQuickAdd }: EmptyStateProps) {
   const templatesWithIcon = QUICK_ADD_TEMPLATES.map((entry) => {

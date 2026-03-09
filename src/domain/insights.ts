@@ -1,8 +1,8 @@
 import { BILLING_CYCLE_YEARLY_MULTIPLIER } from "@/lib/config/constants";
 import { toLocalDateKey } from "@/lib/utils/date";
-import { calculateAnnualSavings } from "@/lib/domain/item";
-import { getOccurrencesForMonth } from "@/lib/domain/schedule";
-import type { Item } from "@/lib/domain/types";
+import { calculateAnnualSavings } from "@/domain/item";
+import { getOccurrencesForMonth } from "@/domain/schedule";
+import type { Item } from "@/domain/types";
 import { formatRM } from "@/lib/utils/format";
 
 export interface HeatmapMonth {

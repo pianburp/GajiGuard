@@ -1,5 +1,5 @@
-import type { HeatmapMonth, SubscriptionHealthRow, CancelSuggestion, AuditSummary } from "@/lib/domain/insights";
-import type { Item, Occurrence } from "@/lib/domain/types";
+import type { HeatmapMonth, SubscriptionHealthRow, CancelSuggestion, AuditSummary } from "@/domain/insights";
+import type { Item, Occurrence } from "@/domain/types";
 
 export interface BudgetStatus {
   spent: number;

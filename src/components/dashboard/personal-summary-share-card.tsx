@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { computeSummaryStats, toMonthLabel } from "@/lib/share/share-image-summary";
-import type { Item, Occurrence } from "@/lib/domain/types";
+import type { Item, Occurrence } from "@/domain/types";
 
 interface PersonalSummaryShareCardProps {
   items: Item[];

@@ -1,4 +1,4 @@
-import type { Item, Occurrence, OccurrenceStatus } from "@/lib/domain/types";
+import type { Item, Occurrence, OccurrenceStatus } from "@/domain/types";
 import { toLocalDateKey } from "@/lib/utils/date";
 
 function startOfDay(value: Date): Date {

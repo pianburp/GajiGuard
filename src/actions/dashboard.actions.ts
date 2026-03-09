@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireAuth } from "@/lib/auth/session";
 import { rateLimit } from "@/lib/infra/rate-limit";
 import { getDashboardDataForUser } from "@/lib/services/dashboard.service";
-import type { DashboardData } from "@/lib/domain/dashboard";
+import type { DashboardData } from "@/domain/dashboard";
 
 const yearSchema = z
   .number()

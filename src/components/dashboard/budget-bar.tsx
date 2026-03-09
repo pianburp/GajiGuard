@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatRM } from "@/lib/utils/format";
@@ -10,10 +11,40 @@ import { Target, Pencil, X, Check, AlertTriangle } from "lucide-react";
 interface BudgetBarProps {
   budget: number | null;
   spent: number;
+  history?: Array<{
+    monthKey: string;
+    monthLabel: string;
+    spent: number;
+  }>;
   onSetBudget: (amount: number | null) => void;
 }
 
-export function BudgetBar({ budget, spent, onSetBudget }: BudgetBarProps) {
+const SPARKLINE_WIDTH = 220;
+const SPARKLINE_HEIGHT = 34;
+
+function buildSparklinePath(
+  values: number[],
+  width: number,
+  height: number,
+): string {
+  if (values.length <= 1) return "";
+
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
+  const range = Math.max(max - min, 1);
+  const step = width / (values.length - 1);
+
+  return values
+    .map((value, index) => {
+      const x = index * step;
+      const normalized = (value - min) / range;
+      const y = height - normalized * height;
+      return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+    })
+    .join(" ");
+}
+
+export function BudgetBar({ budget, spent, history = [], onSetBudget }: BudgetBarProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,14 +68,17 @@ export function BudgetBar({ budget, spent, onSetBudget }: BudgetBarProps) {
   // No budget set — show CTA
   if (budget === null && !editing) {
     return (
-      <button
+      <motion.button
         type="button"
         onClick={startEditing}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         className="flex w-full items-center gap-2 rounded-md border border-dashed p-3 text-xs text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
       >
         <Target className="h-3.5 w-3.5" />
         <span>Set a monthly budget</span>
-      </button>
+      </motion.button>
     );
   }
 
@@ -82,9 +116,16 @@ export function BudgetBar({ budget, spent, onSetBudget }: BudgetBarProps) {
   const pct = Math.min((spent / budget!) * 100, 100);
   const overBudget = spent > budget!;
   const nearLimit = pct >= 80 && !overBudget;
+  const historyValues = history.map((entry) => entry.spent);
+  const sparklinePath = buildSparklinePath(historyValues, SPARKLINE_WIDTH, SPARKLINE_HEIGHT);
 
   return (
-    <div className="space-y-3">
+    <motion.div
+      className="space-y-3"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div className="flex items-center justify-between">
         <button
           type="button"
@@ -97,19 +138,51 @@ export function BudgetBar({ budget, spent, onSetBudget }: BudgetBarProps) {
       </div>
 
       {/* Progress bar */}
-      <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
-        <div
+      <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted">
+        <div className="absolute inset-y-0 left-1/2 w-px bg-background/80" />
+        <div className="absolute inset-y-0 left-3/4 w-px bg-background/80" />
+        <motion.div
           className={cn(
-            "h-full transition-all duration-300",
+            "h-full",
             overBudget
               ? "bg-red-500"
               : nearLimit
                 ? "bg-amber-500"
                 : "bg-green-500",
           )}
-          style={{ width: `${pct}%` }}
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         />
       </div>
+      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+        <span>50%</span>
+        <span>75%</span>
+      </div>
+
+      {history.length > 2 && (
+        <div className="space-y-1">
+          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">6-month trend</p>
+          <svg
+            viewBox={`0 0 ${SPARKLINE_WIDTH} ${SPARKLINE_HEIGHT}`}
+            role="img"
+            aria-label="Budget usage trend"
+            className="h-8 w-full overflow-visible"
+          >
+            <path
+              d={sparklinePath}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              className="text-muted-foreground/70"
+            />
+          </svg>
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>{history[0]?.monthLabel}</span>
+            <span>{history.at(-1)?.monthLabel}</span>
+          </div>
+        </div>
+      )}
 
       {/* Labels */}
       <div className="flex items-center justify-between text-xs">
@@ -132,6 +205,6 @@ export function BudgetBar({ budget, spent, onSetBudget }: BudgetBarProps) {
           </span>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

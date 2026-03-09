@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatRM } from "@/lib/utils/format";
-import type { HeatmapMonth } from "@/lib/domain/insights";
+import type { HeatmapMonth } from "@/domain/insights";
 
 interface RecurringCostHeatmapProps {
   year: number;

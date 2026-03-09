@@ -1,4 +1,4 @@
-import type { Item } from "@/lib/domain/types";
+import type { Item } from "@/domain/types";
 import { BILLING_CYCLE_YEARLY_MULTIPLIER } from "@/lib/config/constants";
 
 /** Row shape returned by Drizzle for the `item` table. */
