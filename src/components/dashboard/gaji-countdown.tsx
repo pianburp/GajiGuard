@@ -35,6 +35,7 @@ export function GajiCountdown({ gajiDay, onSetGajiDay, billsBeforePayday }: Gaji
   const [draft, setDraft] = useState(String(gajiDay));
   const inputRef = useRef<HTMLInputElement>(null);
   const [confettiSeed, setConfettiSeed] = useState(0);
+  const [randomEmoji, setRandomEmoji] = useState(MALAYSIA_EMOJIS[0]);
 
   const { daysUntil, periodDays } = useMemo(() => {
     const today = normalizeDate(new Date());
@@ -74,6 +75,12 @@ export function GajiCountdown({ gajiDay, onSetGajiDay, billsBeforePayday }: Gaji
   }, [gajiDay]);
 
   useEffect(() => {
+    setRandomEmoji(
+      MALAYSIA_EMOJIS[Math.floor(Math.random() * MALAYSIA_EMOJIS.length)]
+    );
+  }, []);
+
+  useEffect(() => {
     if (daysUntil === 0) {
       setConfettiSeed((seed) => seed + 1);
     }
@@ -90,8 +97,7 @@ export function GajiCountdown({ gajiDay, onSetGajiDay, billsBeforePayday }: Gaji
       : urgency < 0.78
         ? "from-amber-500/20 to-amber-500/5 text-amber-700 dark:text-amber-300"
         : "from-emerald-500/15 to-emerald-500/5 text-emerald-700 dark:text-emerald-300";
-  const emojiIndex = Math.abs((gajiDay * 31 + daysUntil * 17) % MALAYSIA_EMOJIS.length);
-  const randomEmoji = MALAYSIA_EMOJIS[emojiIndex];
+
 
   const startEditing = () => {
     setDraft(String(gajiDay));
