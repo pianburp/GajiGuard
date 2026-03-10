@@ -90,7 +90,7 @@ export function AuthButton() {
       id="google-signin-button"
     >
       <GoogleIcon className="h-4 w-4" width={16} height={16} />
-      {isLoading ? "Signing in…" : "Sign in with Google"}
+      {isLoading ? "Signing in…" : "Google je!"}
     </Button>
   );
 }
