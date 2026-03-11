@@ -8,9 +8,32 @@ import { OneTapPrompt } from "@/components/auth/auth-button";
 import { ThemeTogglerButton } from "@/components/animate-ui/components/buttons/theme-toggler";
 import { CopyButton } from "@/components/animate-ui/components/buttons/copy";
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://langgancheck.com";
+
 export const metadata: Metadata = {
   title: "LangganCheck — Subscription & BNPL Tracker",
   description: "Track subscriptions and BNPL commitments with a monthly calendar view.",
+  metadataBase: new URL(appUrl),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "LangganCheck — Subscription & BNPL Tracker",
+    description: "Track subscriptions and BNPL commitments with a monthly calendar view.",
+    url: appUrl,
+    siteName: "LangganCheck",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LangganCheck — Subscription & BNPL Tracker",
+    description: "Track subscriptions and BNPL commitments with a monthly calendar view.",
+  },
+  verification: process.env.GOOGLE_SITE_VERIFICATION
+    ? {
+        google: process.env.GOOGLE_SITE_VERIFICATION,
+      }
+    : undefined,
 };
 
 export default async function RootLayout({
